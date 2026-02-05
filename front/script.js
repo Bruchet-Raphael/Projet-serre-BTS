@@ -432,7 +432,7 @@ function initializeCharts() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // important pour respecter la taille du conteneur
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -495,7 +495,7 @@ function initializeCharts() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // important pour respecter la taille du conteneur
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -532,6 +532,7 @@ function initializeCharts() {
         });
     }
 }
+
 
 function addToHistory(data) {
     const now = new Date();

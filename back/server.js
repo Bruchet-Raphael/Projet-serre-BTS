@@ -72,3 +72,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
+
+//http://172.29.254.101/

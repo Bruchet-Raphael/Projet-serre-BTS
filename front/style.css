@@ -603,11 +603,13 @@ body {
 }
 
 .chart-container {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    box-shadow: 0 4px 20px var(--shadow);
+    width: 500px;
+    height: 300px;       
+    max-width: 100%;    
+    margin: 0 auto;     
+    position: relative;
 }
+
 
 .chart-title {
     font-size: 1.1rem;
