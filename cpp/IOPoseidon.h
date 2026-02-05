@@ -1,16 +1,17 @@
 #ifndef IOPOSEIDON_H
 #define IOPOSEIDON_H
 
-#include <modbus/modbus.h>
+// CORRECTION : On inclut modbus.h directement (pkg-config gère le chemin)
+#include <modbus.h>
 #include <string>
 #include <iostream>
 
-// --- MAPPING MODBUS (Tes constantes validées) ---
-#define ADRESSE_TEMP_EXT    5  // Registre lecture Temp (x10)
-#define ADRESSE_NIVEAU_CUVE 100   // Entrée TOR (0/1)
-#define ADRESSE_COMPTEUR    1   // Registre Compteur Impulsions
-#define ADRESSE_POMPE       151   // Relais Pompe
-#define ADRESSE_VANNE       152   // Relais Vannes (0=Ville, 1=Pluie)
+// --- MAPPING MODBUS (ADAPTÉ AU SIMULATEUR) ---
+#define ADRESSE_TEMP_EXT    5     // Registre Holding (40005)
+#define ADRESSE_NIVEAU_CUVE 100   // Adresse à vérifier (Entrée ou Coil)
+#define ADRESSE_COMPTEUR    1     // Registre Holding (40001) - Débitmètre
+#define ADRESSE_POMPE       151   // Coil (00151)
+#define ADRESSE_VANNE       152   // Coil (00152)
 
 class IOPoseidon {
 private:
@@ -33,20 +34,16 @@ public:
     bool connecter();
     void deconnecter();
 
-    // --- Méthodes de LECTURE (Capteurs) ---
-    // Met à jour toutes les valeurs depuis la carte
+    // --- Méthodes de LECTURE ---
     bool updateAll(); 
     
-    // Getters pour récupérer les valeurs dans ton programme principal
+    // Getters
     float getTemperature();
     bool isCuvePleine();
     uint32_t getImpulsions();
 
-    // --- Méthodes d'ÉCRITURE (Actionneurs) ---
-    // Active ou désactive la pompe
+    // --- Méthodes d'ÉCRITURE ---
     bool setPompe(bool etat); 
-    
-    // Choisit le réseau d'eau (True = Pluie, False = Ville)
     bool setReseauEau(bool utiliserPluie);
 };
 
