@@ -8,6 +8,41 @@ class TCW241 {
         this.timestamp = new Date();
     }
 
+    async getTemp(client) {
+        const reg = await client.readHoldingRegisters(19800, 2);
+        const buf = Buffer.alloc(4);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[0], 0);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[1], 2);
+        return buf.readFloatBE(0);
+    }
+
+    async getH1(client) {
+        const reg = await client.readHoldingRegisters(17500, 2);
+        const buf = Buffer.alloc(4);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[0], 0);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[1], 2);
+        const volts = buf.readFloatBE(0);
+        return (volts / 5) * 100;
+    }
+
+    async getH2(client) {
+        const reg = await client.readHoldingRegisters(17502, 2);
+        const buf = Buffer.alloc(4);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[0], 0);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[1], 2);
+        const volts = buf.readFloatBE(0);
+        return (volts / 5) * 100;
+    }
+
+    async getH3(client) {
+        const reg = await client.readHoldingRegisters(17504, 2);
+        const buf = Buffer.alloc(4);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[0], 0);
+        buf.writeUInt16BE(reg.response._body.valuesAsArray[1], 2);
+        const volts = buf.readFloatBE(0);
+        return (volts / 5) * 100;
+    }
+
     setTemperature(value) {
         this.temperature = value;
         this.timestamp = new Date();
