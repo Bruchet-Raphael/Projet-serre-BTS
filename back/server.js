@@ -225,6 +225,64 @@ app.get('/api/info', authMiddleware, async (req, res) => {
   }
 });
 
+async function readTCW241() {
+    return new Promise((resolve, reject) => {
+        const socket = new net.Socket();
+        const client = new Modbus.client.TCP(socket);
+
+        socket.connect({ host: process.env.serverIP, port: process.env.portMod });
+
+        socket.on('connect', async () => {
+            try {
+                const tcw = new TCW241();
+
+                const temp = await tcw.getTemp(client);
+                const h1 = await tcw.getH1(client);
+                const h2 = await tcw.getH2(client);
+                const h3 = await tcw.getH3(client);
+
+                tcw.setTemperature(temp);
+                tcw.setHumidites(h1, h2, h3);
+
+                socket.end();
+                resolve(tcw);
+
+            } catch (err) {
+                socket.end();
+                reject(err);
+            }
+        });
+
+        socket.on('error', reject);
+    });
+}
+
+async function saveLoop() {
+    try {
+        const tcw = await readTCW241();
+
+        const sql = `
+            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne, timestamp)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        `;
+
+        db.query(sql, [
+            tcw.temperature,
+            tcw.h1,
+            tcw.h2,
+            tcw.h3,
+            tcw.humiditeMoyenne
+        ]);
+
+    } catch (err) {
+        console.error("Erreur boucle BDD :", err.message);
+    }
+}
+
+setInterval(saveLoop, 10000);
+
+
+
 // ========================================
 // 🚀 START SERVER
 // ========================================

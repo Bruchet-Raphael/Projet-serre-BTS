@@ -59,9 +59,9 @@ class TCW241 {
     toJSON() {
         return {
             temperature: this.temperature,
-            humidite1: this.h1,
-            humidite2: this.h2,
-            humidite3: this.h3,
+            h1: this.h1,
+            h2: this.h2,
+            h3: this.h3,
             humiditeSol: this.humiditeMoyenne,
             timestamp: this.timestamp
         };
