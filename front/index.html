@@ -138,98 +138,89 @@ checkAuth();
         </section>
 
         <!-- Controls Section -->
-        <section class="controls-section">
+        <section class="controls-section" id="controls">
             <h2 class="section-title">Contrôles Automatiques</h2>
             <div class="controls-grid">
                 <div class="control-panel">
                     <div class="control-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L14 8L12 14L10 8L12 2Z" fill="#4CAF50"/>
-                            <path d="M3 14C3 14 5 10 12 10C19 10 21 14 21 14" stroke="#4CAF50" stroke-width="2"/>
-                        </svg>
                         <h3>Arrosage Automatique</h3>
                     </div>
                     <div class="control-body">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="irrigation-toggle" class="toggle-input">
-                            <label for="irrigation-toggle" class="toggle-label">
-                                <span class="toggle-button"></span>
-                            </label>
-                            <span class="toggle-text">Désactivé</span>
+                        <div class="toggle-switch-container">
+                            <div class="toggle-switch big-toggle">
+                                <input type="checkbox" id="irrigation-toggle" class="toggle-input">
+                                <label for="irrigation-toggle" class="toggle-label">
+                                    <span class="toggle-button"></span>
+                                    <span class="toggle-text">Désactivé</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="control-settings">
-                            <label>Seuil d'humidité: <span id="irrigation-threshold">30</span>%</label>
-                            <input type="range" id="irrigation-slider" min="0" max="100" value="30" class="slider">
+                            <label class="settings-label">Seuil: <span id="irrigation-threshold" class="threshold-value">30</span>%</label>
+                            <input type="range" id="irrigation-slider" min="0" max="100" value="30" class="slider large-slider">
                         </div>
                     </div>
                 </div>
 
                 <div class="control-panel">
                     <div class="control-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="4" fill="#FF9800"/>
-                            <line x1="12" y1="2" x2="12" y2="5" stroke="#FF9800" stroke-width="2"/>
-                            <line x1="12" y1="19" x2="12" y2="22" stroke="#FF9800" stroke-width="2"/>
-                        </svg>
                         <h3>Brumisateur</h3>
                     </div>
                     <div class="control-body">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="lighting-toggle" class="toggle-input">
-                            <label for="lighting-toggle" class="toggle-label">
-                                <span class="toggle-button"></span>
-                            </label>
-                            <span class="toggle-text">Désactivé</span>
+                        <div class="toggle-switch-container">
+                            <div class="toggle-switch big-toggle">
+                                <input type="checkbox" id="mist-toggle" class="toggle-input">
+                                <label for="mist-toggle" class="toggle-label">
+                                    <span class="toggle-button"></span>
+                                    <span class="toggle-text">Désactivé</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="control-settings">
-                            <label>Intensité: <span id="lighting-intensity">50</span>%</label>
-                            <input type="range" id="lighting-slider" min="0" max="100" value="50" class="slider">
+                            <label class="settings-label">Intensité: <span id="mist-intensity" class="threshold-value">50</span>%</label>
+                            <input type="range" id="mist-slider" min="0" max="100" value="50" class="slider large-slider">
                         </div>
                     </div>
                 </div>
 
                 <div class="control-panel">
                     <div class="control-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 12C4 12 6 8 12 8C18 8 20 12 20 12M4 12C4 12 6 16 12 16C18 16 20 12 20 12" stroke="#2196F3" stroke-width="2"/>
-                            <circle cx="12" cy="12" r="2" fill="#2196F3"/>
-                        </svg>
                         <h3>Ventilation</h3>
                     </div>
                     <div class="control-body">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="ventilation-toggle" class="toggle-input">
-                            <label for="ventilation-toggle" class="toggle-label">
-                                <span class="toggle-button"></span>
-                            </label>
-                            <span class="toggle-text">Désactivé</span>
+                        <div class="toggle-switch-container">
+                            <div class="toggle-switch big-toggle">
+                                <input type="checkbox" id="ventilation-toggle" class="toggle-input">
+                                <label for="ventilation-toggle" class="toggle-label">
+                                    <span class="toggle-button"></span>
+                                    <span class="toggle-text">Désactivé</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="control-settings">
-                            <label>Vitesse: <span id="ventilation-speed">3</span></label>
-                            <input type="range" id="ventilation-slider" min="1" max="5" value="3" class="slider">
+                            <label class="settings-label">Vitesse: <span id="ventilation-speed" class="threshold-value">3</span>/5</label>
+                            <input type="range" id="ventilation-slider" min="1" max="5" value="3" class="slider large-slider">
                         </div>
                     </div>
                 </div>
 
                 <div class="control-panel">
                     <div class="control-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <rect x="4" y="4" width="16" height="16" rx="2" stroke="#9C27B0" stroke-width="2"/>
-                            <line x1="4" y1="10" x2="20" y2="10" stroke="#9C27B0" stroke-width="2"/>
-                        </svg>
                         <h3>Chauffage</h3>
                     </div>
                     <div class="control-body">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="heating-toggle" class="toggle-input">
-                            <label for="heating-toggle" class="toggle-label">
-                                <span class="toggle-button"></span>
-                            </label>
-                            <span class="toggle-text">Désactivé</span>
+                        <div class="toggle-switch-container">
+                            <div class="toggle-switch big-toggle">
+                                <input type="checkbox" id="heating-toggle" class="toggle-input">
+                                <label for="heating-toggle" class="toggle-label">
+                                    <span class="toggle-button"></span>
+                                    <span class="toggle-text">Désactivé</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="control-settings">
-                            <label>Température cible: <span id="heating-target">20</span>°C</label>
-                            <input type="range" id="heating-slider" min="10" max="35" value="20" class="slider">
+                            <label class="settings-label">Température: <span id="heating-target" class="threshold-value">20</span>°C</label>
+                            <input type="range" id="heating-slider" min="10" max="35" value="20" class="slider large-slider">
                         </div>
                     </div>
                 </div>

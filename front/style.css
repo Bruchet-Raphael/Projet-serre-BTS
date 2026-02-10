@@ -445,20 +445,25 @@ body {
 
 .controls-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
 }
 
 .control-panel {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    box-shadow: 0 4px 20px var(--shadow);
-    transition: transform var(--transition-fast);
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
 }
 
 .control-panel:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
 }
 
 .control-header {
@@ -467,19 +472,32 @@ body {
     gap: 1rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid rgba(0,0,0,0.1);
 }
 
 .control-header h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: #333;
 }
 
 .control-body {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    justify-content: space-between;
+}
+
+.toggle-switch-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.big-toggle {
+    transform: scale(1.8);
+    transform-origin: left center;
 }
 
 /* Toggle Switch */
@@ -487,6 +505,7 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
+    position: relative;
 }
 
 .toggle-input {
@@ -494,66 +513,120 @@ body {
 }
 
 .toggle-label {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-    background: #E0E6ED;
-    border-radius: 30px;
+    display: flex;
+    align-items: center;
     cursor: pointer;
-    transition: background var(--transition-normal);
+    gap: 0.75rem;
 }
 
 .toggle-button {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 24px;
-    height: 24px;
-    background: white;
-    border-radius: 50%;
-    transition: transform var(--transition-normal);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    width: 60px;
+    height: 34px;
+    background-color: #ccc;
+    border-radius: 34px;
+    position: relative;
+    transition: all 0.3s ease;
+    display: block;
 }
 
-.toggle-input:checked + .toggle-label {
-    background: var(--primary-green);
+.toggle-button::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .toggle-input:checked + .toggle-label .toggle-button {
-    transform: translateX(30px);
+    background-color: #4CAF50;
+}
+
+.toggle-input:checked + .toggle-label .toggle-button::after {
+    left: 28px;
 }
 
 .toggle-text {
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 1.1rem;
+    min-width: 120px;
 }
 
-.toggle-input:checked ~ .toggle-text {
-    color: var(--primary-green);
+.toggle-input:checked + .toggle-label .toggle-text {
+    color: #4CAF50;
 }
 
 /* Control Settings */
 .control-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    margin-top: 1.5rem;
 }
 
-.control-settings label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    display: flex;
-    justify-content: space-between;
-}
-
-.control-settings label span {
-    color: var(--primary-green);
+.settings-label {
+    display: block;
+    font-size: 1.1rem;
     font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: #333;
 }
 
-/* Slider */
+.threshold-value {
+    font-weight: 700;
+    color: #4CAF50;
+    font-size: 1.2rem;
+}
+
+/* LARGE SLIDER */
+.large-slider {
+    width: 100%;
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(to right, #e0e0e0, #b0b0b0);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.large-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+    transition: all 0.2s ease;
+}
+
+.large-slider::-webkit-slider-thumb:hover {
+    width: 32px;
+    height: 32px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6);
+}
+
+.large-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+    transition: all 0.2s ease;
+}
+
+.large-slider::-moz-range-thumb:hover {
+    width: 32px;
+    height: 32px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6);
+}
+
+/* Ancien slider - garder pour compatibilité */
 .slider {
     width: 100%;
     height: 6px;
@@ -786,6 +859,34 @@ body {
     
     .controls-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .control-panel {
+        padding: 1.5rem;
+        min-height: auto;
+    }
+
+    .big-toggle {
+        transform: scale(1.5);
+    }
+
+    .control-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .settings-label {
+        font-size: 1rem;
+    }
+
+    .large-slider::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+
+    .large-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
     }
     
     .container {
