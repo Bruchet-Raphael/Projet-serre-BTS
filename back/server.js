@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -10,9 +9,12 @@ const { v4: uuidv4 } = require('uuid');
 const Modbus = require('jsmodbus');
 const net = require('net');
 const bodyParser = require('body-parser');
+
+// --- [IMPORT] Ta classe Poseidon ---
+const IOPoseidon = require('./IOPoseidon');
+
 dotenv.config();
 const TCW241 = require('./TCW241.js');
-
 
 const app = express();
 
@@ -20,8 +22,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.CODE;
 
 // ========================================
@@ -44,7 +45,7 @@ db.connect(err => {
 });
 
 // ========================================
-// 🔐 JWT
+// 🔐 JWT Middleware
 // ========================================
 
 function extractToken(req) {
@@ -74,7 +75,7 @@ function authMiddleware(req, res, next) {
 }
 
 // ========================================
-// 🔐 Route LOGIN
+// 🔐 Routes LOGIN / INSCRIPTION
 // ========================================
 
 app.post('/api/login', (req, res) => {
@@ -85,25 +86,13 @@ app.post('/api/login', (req, res) => {
 
   const query = 'SELECT * FROM Utilisateur WHERE login = ?';
   db.query(query, [login], (err, results) => {
-    if (err) {
-      console.error('Erreur lors de la requête MySQL :', err.message);
-      return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    }
-
-    if (results.length === 0) {
-      return res.status(401).json({ success: false, message: 'Nom d\'utilisateur inexistant' });
-    }
+    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    if (results.length === 0) return res.status(401).json({ success: false, message: 'Utilisateur inexistant' });
 
     const user = results[0];
     bcrypt.compare(password, user.mdp, (err, isMatch) => {
-      if (err) {
-        console.error('Erreur lors de la comparaison des mots de passe :', err.message);
-        return res.status(500).json({ success: false, message: 'Erreur serveur' });
-      }
-
-      if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'Nom d\'utilisateur ou mot de passe incorrect' });
-      }
+      if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
+      if (!isMatch) return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
 
       const jti = uuidv4();
       const payload = { sub: user.Id || user.id || user.ID, login: user.Login, jti };
@@ -114,7 +103,6 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// Route d'inscription
 app.post('/api/inscription', (req, res) => {
   const { prenom, nom, email, username, password } = req.body;
   if (!prenom || !nom || !email || !username || !password) {
@@ -123,29 +111,16 @@ app.post('/api/inscription', (req, res) => {
 
   const checkQuery = 'SELECT * FROM Utilisateur WHERE Login = ? OR Mail = ?';
   db.query(checkQuery, [username, email], (err, results) => {
-    if (err) {
-      console.error('Erreur lors de la requête MySQL :', err.message);
-      return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    }
-
-    if (results.length > 0) {
-      return res.status(409).json({ success: false, message: 'Nom d\'utilisateur ou email déjà utilisé' });
-    }
+    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    if (results.length > 0) return res.status(409).json({ success: false, message: 'Utilisateur ou email déjà utilisé' });
 
     bcrypt.hash(password, 10, (err, hashedPassword) => {
-      if (err) {
-        console.error('Erreur lors du hachage du mot de passe :', err.message);
-        return res.status(500).json({ success: false, message: 'Erreur serveur' });
-      }
+      if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
       const insertQuery = 'INSERT INTO Utilisateur (nom, prenom, mail, login, mdp) VALUES (?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword], (err, results) => {
-        if (err) {
-          console.error('Erreur lors de l\'insertion dans la base de données :', err.message);
-          return res.status(500).json({ success: false, message: 'Erreur serveur' });
-        }
+        if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
-        // Récupérer l'ID inséré si besoin
         const userId = results.insertId;
         const jti = uuidv4();
         const payload = { sub: userId, login: username, jti };
@@ -158,67 +133,139 @@ app.post('/api/inscription', (req, res) => {
 });
 
 
+// ========================================
+// 🌊 GESTION POSEIDON (ETUDIANT 2)
+// ========================================
+
+const poseidon = new IOPoseidon('172.29.19.39'); // IP Simulateur
+let besoinEauSimule = false;
+
+// Supervision automatique en arrière-plan
+async function startWaterSupervision() {
+  try {
+    await poseidon.connect();
+    
+    // Boucle infinie toutes les 2 secondes
+    setInterval(async () => {
+      // 1. Lire les capteurs
+      await poseidon.updateAll();
+      
+      // 2. Exécuter les algorithmes
+      await poseidon.gererChoixReseau();
+      await poseidon.gererPompe(besoinEauSimule);
+      
+    }, 2000);
+    
+    console.log("💧 Supervision Poseidon démarrée");
+  } catch (err) {
+    console.error("Erreur Supervision Poseidon:", err.message);
+  }
+}
+startWaterSupervision(); // Lancement au démarrage
+
 
 // ========================================
-// 🌡️ Lecture Modbus : température
+// 🌡️ GESTION TCW241 (ETUDIANT 1)
 // ========================================
 
+<<<<<<< HEAD
 async function getAllData() {
+=======
+async function getTCWData() {
+>>>>>>> 52ba69c211f289c30dc4fb383679d76932e66db8
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
     const client = new Modbus.client.TCP(socket);
 
+    // Utilisation des variables d'env pour le TCW
     socket.connect({ host: process.env.serverIP, port: process.env.portMod });
 
     socket.on('connect', async () => {
       try {
         const tcw = new TCW241();
+<<<<<<< HEAD
         const data = await tcw.getAll(client);
 
         socket.end();
         resolve(data);
+=======
+        // Lecture des données
+        const temp = await tcw.getTemp(client);
+        const h1 = await tcw.getH1(client);
+        const h2 = await tcw.getH2(client);
+        const h3 = await tcw.getH3(client);
+
+        tcw.setTemperature(temp);
+        tcw.setHumidites(h1, h2, h3);
+
+        socket.end();
+        resolve(tcw.toJSON()); // Retourne { temperature: X, humiditeSol: Y ... }
+>>>>>>> 52ba69c211f289c30dc4fb383679d76932e66db8
 
       } catch (err) {
         socket.end();
-        reject(err);
+        resolve({ temperature: null, humiditeSol: null }); // Retourne null si erreur
       }
     });
 
-    socket.on('error', reject);
+    socket.on('error', (err) => {
+        resolve({ temperature: null, humiditeSol: null }); // Pas de crash si TCW éteint
+    });
   });
 }
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 52ba69c211f289c30dc4fb383679d76932e66db8
 // ========================================
-// 🌍 EXPRESS
+// 🌍 EXPRESS STATIC
 // ========================================
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Assure-toi que le chemin est bon par rapport à l'emplacement de server.js
+app.use(express.static(path.join(__dirname, '../front'))); 
 
-app.use(express.static('/var/www/html/Serre'));
-
-// Page principale
 app.get('/', (req, res) => {
-  res.sendFile(path.join('/var/www/html/Serre/front', 'index.html'));
+  res.sendFile(path.join(__dirname, '../front', 'index.html'));
 });
 
 // ========================================
-// 🌡️ Route API protégée
+// 🚀 ROUTE API UNIFIÉE
 // ========================================
 
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
+<<<<<<< HEAD
     const data = await getAllData();
     res.json({ success: true, ...data });
+=======
+    // 1. Récupérer les données TCW (Etudiant 1)
+    const tcwData = await getTCWData();
+
+    // 2. Récupérer les données Poseidon (Etudiant 2 - depuis le cache mémoire)
+    const waterData = {
+        consoEau: poseidon.getConsommationLitres(),
+        cuvePleine: poseidon.isCuvePleine(),
+        tempExt: poseidon.getTemperature(),
+        reseauPluie: (poseidon.getTemperature() >= 1 && poseidon.isCuvePleine())
+    };
+
+    // 3. Fusionner et envoyer le tout
+    res.json({ 
+        success: true, 
+        ...tcwData, 
+        ...waterData 
+    });
+
+>>>>>>> 52ba69c211f289c30dc4fb383679d76932e66db8
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
+<<<<<<< HEAD
 async function readTCW241() {
     return new Promise((resolve, reject) => {
         const socket = new net.Socket();
@@ -275,11 +322,18 @@ async function saveLoop() {
 
 setInterval(saveLoop, 10000);
 
+=======
+// Route bonus pour le bouton d'arrosage
+app.post('/api/arrosage', authMiddleware, (req, res) => {
+    besoinEauSimule = req.body.etat;
+    res.json({ success: true, etat: besoinEauSimule });
+});
+>>>>>>> 52ba69c211f289c30dc4fb383679d76932e66db8
 
 // ========================================
-// 🚀 START SERVER
+// START SERVER
 // ========================================
 
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
