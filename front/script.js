@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     initializeCharts();
     startDataPolling();
+    setupControlsListeners();
 });
 
 // ========================================
@@ -53,6 +54,72 @@ function initializeEventListeners() {
             e.target.classList.add('active');
         });
     });
+}
+
+// Gestion des contrôles automatiques
+function setupControlsListeners() {
+    // Sliders pour mise à jour des valeurs affichées
+    document.getElementById('irrigation-slider')?.addEventListener('input', (e) => {
+        document.getElementById('irrigation-threshold').textContent = e.target.value;
+    });
+    
+    document.getElementById('mist-slider')?.addEventListener('input', (e) => {
+        document.getElementById('mist-intensity').textContent = e.target.value;
+    });
+    
+    document.getElementById('ventilation-slider')?.addEventListener('input', (e) => {
+        document.getElementById('ventilation-speed').textContent = e.target.value;
+    });
+    
+    document.getElementById('heating-slider')?.addEventListener('input', (e) => {
+        document.getElementById('heating-target').textContent = e.target.value;
+    });
+    
+    // Bouton Appliquer
+    document.getElementById('apply-controls-btn')?.addEventListener('click', applyControls);
+}
+
+function applyControls() {
+    const controls = {
+        irrigation: {
+            enabled: document.getElementById('irrigation-toggle')?.checked || false,
+            threshold: parseInt(document.getElementById('irrigation-slider')?.value || 30)
+        },
+        misting: {
+            enabled: document.getElementById('mist-toggle')?.checked || false,
+            intensity: parseInt(document.getElementById('mist-slider')?.value || 50)
+        },
+        ventilation: {
+            enabled: document.getElementById('ventilation-toggle')?.checked || false,
+            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3)
+        },
+        heating: {
+            enabled: document.getElementById('heating-toggle')?.checked || false,
+            target: parseInt(document.getElementById('heating-slider')?.value || 20)
+        }
+    };
+    
+    console.log('Paramètres appliqués:', controls);
+    
+    // Afficher une notification de succès
+    showApplyNotification();
+    
+    // Ici tu peux envoyer les données au backend
+    // sendControlsToBackend(controls);
+}
+
+function showApplyNotification() {
+    const btn = document.getElementById('apply-controls-btn');
+    if (!btn) return;
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">✓</span> Paramètres appliqués!';
+    btn.style.background = 'linear-gradient(135deg, #45a049, #357a3f)';
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+    }, 2000);
 }
 
 // ========================================
