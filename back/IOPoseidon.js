@@ -42,9 +42,15 @@ class IOPoseidon {
             });
 
             this.socket.on('error', (err) => {
-                console.error('❌ [Poseidon] Erreur connexion:', err.message);
+                // On log juste l'erreur sans crasher l'app
+                console.error(`❌ [Poseidon] Erreur connexion: ${err.message}`);
                 this.isConnected = false;
-                reject(err);
+                // On ne reject pas forcément ici pour permettre les retry
+            });
+
+            this.socket.on('close', () => {
+                this.isConnected = false;
+                console.log('⚠️ [Poseidon] Connexion fermée');
             });
         });
     }
@@ -68,9 +74,8 @@ class IOPoseidon {
             this.data.impulsions = resCompteur.response.body.values[0];
 
             // 3. Lire Niveau Cuve (Discrete Input)
-            // Si le simu ne répond pas aux DiscreteInputs, essaie readCoils
+            // Note: Sur certains simulateurs, c'est readCoils ou readDiscreteInputs
             const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
-            // Conversion : si valeur > 0 alors TRUE
             this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
 
             return true;
@@ -96,7 +101,6 @@ class IOPoseidon {
         if (!this.isConnected) return;
         try {
             await this.client.writeSingleCoil(MAPPING.POMPE, etat);
-            // console.log(`👉 Action Pompe : ${etat ? 'ON' : 'OFF'}`);
         } catch (err) {
             console.error('Erreur écriture Pompe:', err.message);
         }
@@ -106,7 +110,6 @@ class IOPoseidon {
         if (!this.isConnected) return;
         try {
             await this.client.writeSingleCoil(MAPPING.VANNE, utiliserPluie);
-            // console.log(`👉 Action Réseau : ${utiliserPluie ? 'PLUIE' : 'VILLE'}`);
         } catch (err) {
             console.error('Erreur écriture Vanne:', err.message);
         }

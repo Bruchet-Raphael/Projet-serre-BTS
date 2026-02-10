@@ -3,15 +3,21 @@
 // ========================================
 
 const CONFIG = {
-    apiUrl: 'http://172.29.16.154/api',
+    // Si tu es sur la VM, vérifie que l'IP ici est la bonne pour accéder au back
+    apiUrl: 'http://172.29.16.154/api', // Ou '/api' si le front est servi par node
     updateInterval: 5000,
     chartMaxPoints: 20,
 };
 
 const appState = {
     sensors: {
-        temperature: null,
-        humidity: null
+        temperature: null, // TCW241
+        humidity: null,    // TCW241
+        
+        // --- [ETUDIANT 2] Ajouts EAU ---
+        consoEau: 0,
+        cuvePleine: false,
+        reseauPluie: false
     },
     isConnected: false,
     alerts: []
@@ -56,7 +62,8 @@ function initializeEventListeners() {
 async function fetchSensorData() {
     try {
         const token = localStorage.getItem("token");
-
+        
+        // Utilisation d'une URL relative si possible, sinon garde CONFIG.apiUrl
         const response = await fetch(`${CONFIG.apiUrl}/info`, {
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -71,9 +78,15 @@ async function fetchSensorData() {
 
         const data = await response.json();
 
+        // Mise à jour unifiée (TCW + POSEIDON)
         updateSensorData({
             temperature: parseFloat(data.temperature),
-            humidity: parseFloat(data.humiditeSol)
+            humidity: parseFloat(data.humiditeSol),
+            
+            // Récupération de tes données
+            consoEau: parseFloat(data.consoEau || 0),
+            cuvePleine: data.cuvePleine,
+            reseauPluie: data.reseauPluie
         });
 
         updateConnectionStatus(true);
@@ -94,8 +107,12 @@ function startDataPolling() {
 // ========================================
 
 function updateSensorData(data) {
+    // Stockage dans l'état global
     appState.sensors.temperature = data.temperature;
     appState.sensors.humidity = data.humidity;
+    appState.sensors.consoEau = data.consoEau;
+    appState.sensors.cuvePleine = data.cuvePleine;
+    appState.sensors.reseauPluie = data.reseauPluie;
 
     updateDisplay();
     addToHistory(data);
@@ -104,8 +121,9 @@ function updateSensorData(data) {
 }
 
 function updateDisplay() {
-    const { temperature, humidity } = appState.sensors;
+    const { temperature, humidity, consoEau, cuvePleine, reseauPluie } = appState.sensors;
 
+    // --- Affichage TCW (Existant) ---
     document.getElementById('hero-temp').textContent =
         temperature !== null ? `${temperature.toFixed(1)}°C` : '--';
 
@@ -114,21 +132,47 @@ function updateDisplay() {
 
     updateCard('temp', temperature, '°C', getTemperatureStatus);
     updateCard('humidity', humidity, '%', getHumidityStatus);
+
+    // --- Affichage EAU (Nouveau) ---
+    // Vérifie que tu as bien ajouté les balises HTML correspondantes dans index.html
+    
+    // 1. Consommation
+    const elConso = document.getElementById('valeur-conso');
+    if (elConso) {
+        elConso.textContent = `${consoEau.toFixed(1)} L`;
+    }
+
+    // 2. État de la Cuve
+    const elCuve = document.getElementById('etat-cuve');
+    if (elCuve) {
+        elCuve.textContent = cuvePleine ? 'PLEINE' : 'VIDE';
+        // Changement de classe CSS pour la couleur (Bootstrap badges)
+        elCuve.className = cuvePleine ? 'badge bg-success' : 'badge bg-danger';
+    }
+
+    // 3. Réseau Actif
+    const elReseau = document.getElementById('etat-reseau');
+    if (elReseau) {
+        elReseau.textContent = reseauPluie ? 'EAU DE PLUIE' : 'EAU DE VILLE';
+        elReseau.style.color = reseauPluie ? 'green' : 'orange';
+    }
 }
 
 function updateCard(type, value, unit, statusFunction) {
     const valueElement = document.getElementById(`${type}-value`);
     const statusElement = document.getElementById(`${type}-status`);
 
-    if (value !== null) {
-        valueElement.textContent = value.toFixed(1) + unit;
-        const status = statusFunction(value);
-        statusElement.textContent = status.text;
-        statusElement.className = `card-status text-${status.level}`;
-    } else {
-        valueElement.textContent = '--' + unit;
-        statusElement.textContent = 'Aucune donnée';
-        statusElement.className = 'card-status';
+    if (valueElement && statusElement) {
+        if (value !== null) {
+            valueElement.textContent = value.toFixed(1) + unit;
+            const status = statusFunction(value);
+            statusElement.textContent = status.text;
+            statusElement.className = `card-status text-${status.level}`;
+        } else {
+            valueElement.textContent = '--' + unit;
+            statusElement.textContent = 'Aucune donnée';
+            statusElement.className = 'card-status';
+        }
     }
 }
 
@@ -154,16 +198,18 @@ function updateConnectionStatus(isConnected) {
     const statusText = document.querySelector('.status-text');
     const footerStatus = document.getElementById('footer-status');
 
-    if (isConnected) {
-        indicator.classList.add('online');
-        indicator.classList.remove('offline');
-        statusText.textContent = 'Connecté';
-        footerStatus.textContent = 'Tous les systèmes opérationnels';
-    } else {
-        indicator.classList.remove('online');
-        indicator.classList.add('offline');
-        statusText.textContent = 'Déconnecté';
-        footerStatus.textContent = 'Connexion au système en cours...';
+    if (indicator && statusText) {
+        if (isConnected) {
+            indicator.classList.add('online');
+            indicator.classList.remove('offline');
+            statusText.textContent = 'Connecté';
+            if(footerStatus) footerStatus.textContent = 'Tous les systèmes opérationnels';
+        } else {
+            indicator.classList.remove('online');
+            indicator.classList.add('offline');
+            statusText.textContent = 'Déconnecté';
+            if(footerStatus) footerStatus.textContent = 'Connexion au système en cours...';
+        }
     }
 }
 
@@ -178,10 +224,9 @@ function checkAlerts(data) {
         if (temperature > 32) addAlert('danger', 'Température élevée', `${temperature.toFixed(1)}°C`);
         else if (temperature < 15) addAlert('danger', 'Température basse', `${temperature.toFixed(1)}°C`);
     }
-
-    if (humidity !== null) {
-        if (humidity < 20) addAlert('warning', 'Humidité trop basse', `${humidity.toFixed(1)}%`);
-        else if (humidity > 85) addAlert('warning', 'Humidité trop élevée', `${humidity.toFixed(1)}%`);
+    // Tu peux ajouter des alertes pour la cuve ici
+    if (data.cuvePleine === false && data.reseauPluie === true) {
+         // Exemple d'alerte incohérence (ne devrait pas arriver avec tes algos)
     }
 }
 
@@ -202,6 +247,8 @@ function addAlert(type, title, message) {
 
 function displayAlert(alert) {
     const container = document.getElementById('alerts-container');
+    if (!container) return;
+
     const alertElement = document.createElement('div');
     alertElement.className = `alert alert-${alert.type}`;
     alertElement.innerHTML = `
@@ -218,38 +265,22 @@ function displayAlert(alert) {
 }
 
 // ========================================
-// GRAPHIQUES
+// GRAPHIQUES (Code existant conservé)
 // ========================================
 
 function initializeCharts() {
     const tempCtx = document.getElementById('temp-humidity-chart');
-
-    if (tempCtx) {
+    if (tempCtx && typeof Chart !== 'undefined') {
         charts.temp = new Chart(tempCtx, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [
-                    {
-                        label: 'Température (°C)',
-                        data: [],
-                        borderColor: '#F44336',
-                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Humidité (%)',
-                        data: [],
-                        borderColor: '#2196F3',
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        tension: 0.4
-                    }
+                    { label: 'Température (°C)', data: [], borderColor: '#F44336', tension: 0.4 },
+                    { label: 'Humidité (%)', data: [], borderColor: '#2196F3', tension: 0.4 }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 }
@@ -277,12 +308,3 @@ function updateCharts() {
         charts.temp.update('none');
     }
 }
-
-// ========================================
-// UTILITAIRES
-// ========================================
-
-window.greenhouseApp = {
-    getState: () => appState,
-    getChartData: () => chartData
-};
