@@ -179,7 +179,7 @@ async regulate(client, consigne) {
     }
 
     // ============================
-    // 💧 RÉGULATION HUMIDITE
+    // 💧 RÉGULATION BRUMISATION
     // ============================
     if (consigne.humiditeair !== null && humair !== null) {
 
