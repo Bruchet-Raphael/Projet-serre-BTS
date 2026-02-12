@@ -138,41 +138,41 @@ async regulate(client, consigne) {
 
         // Trop froid → activer CHAUFFAGE (relay3)
         if (temp < consigne.temperature - 0.5) {
-            await client.writeSingleCoil(102, false); // Fenêtre fermée
-            await client.writeSingleCoil(103, true);  // Chauffage ON
+            await client.writeSingleCoil(103, false); // Fenêtre fermée
+            await client.writeSingleCoil(102, true);  // Chauffage ON
         }
 
         // Trop chaud → ouvrir FENÊTRE (relay4)
         if (temp > consigne.temperature + 0.5) {
-            await client.writeSingleCoil(103, false); // Chauffage OFF
-            await client.writeSingleCoil(102, true);  // Fenêtre ouverte
+            await client.writeSingleCoil(102, false); // Chauffage OFF
+            await client.writeSingleCoil(103, true);  // Fenêtre ouverte
         }
 
         // Température OK → tout OFF
         if (temp >= consigne.temperature - 0.2 && temp <= consigne.temperature + 0.2) {
-            await client.writeSingleCoil(103, false); // Chauffage OFF
-            await client.writeSingleCoil(102, false); // Fenêtre fermée
+            await client.writeSingleCoil(102, false); // Chauffage OFF
+            await client.writeSingleCoil(103, false); // Fenêtre fermée
         }
     }
 
     // ============================
-    // 💧 RÉGULATION HUMIDITÉ
+    // 💧 RÉGULATION AROSAGE
     // ============================
     if (consigne.humidite !== null && hum !== null) {
 
         // Humidité trop basse → activer BRUMISATION (relay1)
         if (hum < consigne.humidite - 2) {
-            await client.writeSingleCoil(100, true);
+            await client.writeSingleCoil(101, true);
         }
 
         // Humidité trop haute → couper brumisation
         if (hum > consigne.humidite + 2) {
-            await client.writeSingleCoil(100, false);
+            await client.writeSingleCoil(101, false);
         }
 
         // Humidité OK → OFF
         if (hum >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
-            await client.writeSingleCoil(100, false);
+            await client.writeSingleCoil(101, false);
         }
     }
 
