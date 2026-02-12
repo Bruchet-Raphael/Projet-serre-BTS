@@ -191,26 +191,71 @@ async regulate(client, consigne) {
         await client.writeSingleCoil(101, true);
     }
 
-    if (consigne.temperature !== null && temp !== null) {
 
-        // Trop froid → activer CHAUFFAGE (relay3)
-        if (temp < consigne.temperature - 0.5) {
-            await client.writeSingleCoil(103, false); // Fenêtre fermée
+    
+// ----------------------------
+// RÉGULATION TEMPÉRATURE - CHAUFFAGE (relay2 -> coil 102)
+// ----------------------------
+if (consigne.relay2 == 0) {
+    // automatique : la logique est appliquée dans le bloc température ci-dessous
+    // (on n'écrit rien ici pour éviter les écritures redondantes)
+}
+if (consigne.relay2 == 1) {
+    await client.writeSingleCoil(102, false);
+}
+if (consigne.relay2 == 2) {
+    await client.writeSingleCoil(102, true);
+}
+
+// ----------------------------
+// RÉGULATION TEMPÉRATURE - FENÊTRE (relay3 -> coil 103)
+// ----------------------------
+if (consigne.relay3 == 0) {
+    // automatique : la logique est appliquée dans le bloc température ci-dessous
+}
+if (consigne.relay3 == 1) {
+    await client.writeSingleCoil(103, false);
+}
+if (consigne.relay3 == 2) {
+    await client.writeSingleCoil(103, true);
+}
+
+// ----------------------------
+// LOGIQUE DE RÉGULATION SELON LA TEMPÉRATURE
+// ----------------------------
+if (consigne.temperature !== null && temp !== null) {
+
+    // Trop froid → activer CHAUFFAGE (coil 102) et fermer FENÊTRE (coil 103)
+    if (temp < consigne.temperature - 0.5) {
+        if (consigne.relay2 == 0) {
             await client.writeSingleCoil(102, true);  // Chauffage ON
         }
-
-        // Trop chaud → ouvrir FENÊTRE (relay4)
-        if (temp > consigne.temperature + 0.5) {
-            await client.writeSingleCoil(102, false); // Chauffage OFF
-            await client.writeSingleCoil(103, true);  // Fenêtre ouverte
-        }
-
-        // Température OK → tout OFF
-        if (temp >= consigne.temperature - 0.2 && temp <= consigne.temperature + 0.2) {
-            await client.writeSingleCoil(102, false); // Chauffage OFF
-            await client.writeSingleCoil(103, false); // Fenêtre fermée
+        if (consigne.relay3 == 0) {
+            await client.writeSingleCoil(103, false); // Fenêtre FERMÉE
         }
     }
+
+    // Trop chaud → couper CHAUFFAGE et ouvrir FENÊTRE
+    if (temp > consigne.temperature + 0.5) {
+        if (consigne.relay2 == 0) {
+            await client.writeSingleCoil(102, false); // Chauffage OFF
+        }
+        if (consigne.relay3 == 0) {
+            await client.writeSingleCoil(103, true);  // Fenêtre OUVERTE
+        }
+    }
+
+    // Température OK → tout OFF
+    if (temp >= consigne.temperature - 0.2 && temp <= consigne.temperature + 0.2) {
+        if (consigne.relay2 == 0) {
+            await client.writeSingleCoil(102, false); // Chauffage OFF
+        }
+        if (consigne.relay3 == 0) {
+            await client.writeSingleCoil(103, false); // Fenêtre FERMÉE
+        }
+    }
+}
+
 
     
 
