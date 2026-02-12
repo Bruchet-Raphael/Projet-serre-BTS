@@ -133,9 +133,64 @@ async regulate(client, consigne) {
 
     console.log("Régulation :", { temp, hum, consigne });
 
-    // ============================
-    // 🔥 RÉGULATION TEMPÉRATURE
-    // ============================
+    if(consigne.relay0 == 0){
+        // ============================
+        // 💧 RÉGULATION BRUMISATION
+        // ============================
+        if (consigne.humiditeair !== null && humair !== null) {
+
+            // Humidité trop basse → activer BRUMISATION (relay1)
+            if (humair < consigne.humidite_air - 2) {
+                await client.writeSingleCoil(100, true);
+            }
+
+            // Humidité trop haute → couper brumisation
+            if (humair > consigne.humidite + 2) {
+                await client.writeSingleCoil(100, false);
+            }
+
+            // Humidité OK → OFF
+            if (humair >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
+                await client.writeSingleCoil(100, false);
+            }
+        }
+    }
+    if(consigne.relay0 == 1){
+        await client.writeSingleCoil(100, false);
+    }
+    if(consigne.relay0 == 2){
+        await client.writeSingleCoil(100, true);
+    }
+
+    if(consigne.relay1 == 0){
+        // ============================
+        // 💧 RÉGULATION AROSAGE
+        // ============================
+        if (consigne.humidite !== null && hum !== null) {
+
+            // Humidité trop basse → activer BRUMISATION (relay1)
+            if (hum < consigne.humidite - 2) {
+                await client.writeSingleCoil(101, true);
+            }
+
+            // Humidité trop haute → couper brumisation
+            if (hum > consigne.humidite + 2) {
+                await client.writeSingleCoil(101, false);
+            }
+
+            // Humidité OK → OFF
+            if (hum >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
+                await client.writeSingleCoil(101, false);
+            }
+        }
+    }
+    if(consigne.relay1 == 1){
+        await client.writeSingleCoil(101, false);
+    }
+    if(consigne.relay1 == 2){
+        await client.writeSingleCoil(101, true);
+    }
+
     if (consigne.temperature !== null && temp !== null) {
 
         // Trop froid → activer CHAUFFAGE (relay3)
@@ -157,47 +212,9 @@ async regulate(client, consigne) {
         }
     }
 
-    // ============================
-    // 💧 RÉGULATION AROSAGE
-    // ============================
-    if (consigne.humidite !== null && hum !== null) {
+    
 
-        // Humidité trop basse → activer BRUMISATION (relay1)
-        if (hum < consigne.humidite - 2) {
-            await client.writeSingleCoil(101, true);
-        }
-
-        // Humidité trop haute → couper brumisation
-        if (hum > consigne.humidite + 2) {
-            await client.writeSingleCoil(101, false);
-        }
-
-        // Humidité OK → OFF
-        if (hum >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
-            await client.writeSingleCoil(101, false);
-        }
-    }
-
-    // ============================
-    // 💧 RÉGULATION BRUMISATION
-    // ============================
-    if (consigne.humiditeair !== null && humair !== null) {
-
-        // Humidité trop basse → activer BRUMISATION (relay1)
-        if (humair < consigne.humidite_air - 2) {
-            await client.writeSingleCoil(100, true);
-        }
-
-        // Humidité trop haute → couper brumisation
-        if (humair > consigne.humidite + 2) {
-            await client.writeSingleCoil(100, false);
-        }
-
-        // Humidité OK → OFF
-        if (humair >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
-            await client.writeSingleCoil(100, false);
-        }
-    }
+    
 
     return true;
 }
