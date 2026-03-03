@@ -13,7 +13,7 @@ async function checkAuth() {
     if(token){
         try {
             // Vérifie si le token est toujours valide
-            const response = await fetch("http://172.29.16.154/api/temp", {
+            const response = await fetch("http://172.29.160.160/api/temp", {
                 method: "GET",
                 headers: { "Authorization": "Bearer " + token }
             });
@@ -59,7 +59,7 @@ checkAuth();
         errorBox.innerText = "";
 
         try {
-            const response = await fetch("http://172.29.16.154/api/login", {
+            const response = await fetch("http://172.29.160.160/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ login: loginVal, password: passwordVal })
