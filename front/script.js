@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCharts();
     startDataPolling();
     setupControlsListeners();
+    loadControles();
 });
 
 // ========================================
@@ -221,6 +222,113 @@ async function sendControlsToBackend(controls) {
     } catch (err) {
         console.error('Erreur réseau:', err);
         addAlert('danger', 'Erreur réseau', 'Impossible de communiquer avec le serveur');
+    }
+}
+
+// ========================================
+// CHARGER LES CONTRÔLES DEPUIS LA BDD
+// ========================================
+
+async function loadControles() {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        console.log('Pas de token, aucun contrôle à charger');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${CONFIG.apiUrl}/controles`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!data.success || !data.controles) {
+            console.log('Aucun contrôle enregistré en base');
+            return;
+        }
+
+        const controles = data.controles;
+        const panels = document.querySelectorAll('.control-panel');
+
+        // ========================================
+        // 1. IRRIGATION
+        // ========================================
+        const irrigationPanel = panels[0];
+        setModeButton(irrigationPanel, controles.irrigation_mode);
+        const irrigationSlider = document.getElementById('irrigation-slider');
+        const irrigationThreshold = document.getElementById('irrigation-threshold');
+        if (irrigationSlider && controles.irrigation_threshold !== null) {
+            irrigationSlider.value = controles.irrigation_threshold;
+            irrigationThreshold.textContent = controles.irrigation_threshold;
+        }
+
+        // ========================================
+        // 2. BRUMISATEUR (MISTING)
+        // ========================================
+        const mistingPanel = panels[1];
+        setModeButton(mistingPanel, controles.misting_mode);
+        const mistingSlider = document.getElementById('mist-slider');
+        const mistingIntensity = document.getElementById('mist-intensity');
+        if (mistingSlider && controles.misting_intensity !== null) {
+            mistingSlider.value = controles.misting_intensity;
+            mistingIntensity.textContent = controles.misting_intensity;
+        }
+
+        // ========================================
+        // 3. VENTILATION
+        // ========================================
+        const ventilationPanel = panels[2];
+        setModeButton(ventilationPanel, controles.ventilation_mode);
+        const ventilationDurationSlider = document.getElementById('ventilation-duration-slider');
+        const ventilationDuration = document.getElementById('ventilation-duration');
+        
+        // Mettre à jour le slider selon le mode
+        if (controles.ventilation_mode === 'active' && ventilationDurationSlider) {
+            ventilationDurationSlider.disabled = false;
+            if (controles.ventilation_duration !== null) {
+                ventilationDurationSlider.value = controles.ventilation_duration;
+                ventilationDuration.textContent = controles.ventilation_duration;
+            }
+        } else if (controles.ventilation_mode === 'auto' && ventilationDurationSlider) {
+            ventilationDurationSlider.disabled = true;
+            document.querySelector('.duration-info').textContent = 'Mode Auto: paramètre global';
+        } else if (ventilationDurationSlider) {
+            ventilationDurationSlider.disabled = true;
+            document.querySelector('.duration-info').textContent = '';
+        }
+
+        // ========================================
+        // 4. CHAUFFAGE (HEATING)
+        // ========================================
+        const heatingPanel = panels[3];
+        setModeButton(heatingPanel, controles.heating_mode);
+        const heatingSlider = document.getElementById('heating-slider');
+        const heatingTarget = document.getElementById('heating-target');
+        if (heatingSlider && controles.heating_target !== null) {
+            heatingSlider.value = controles.heating_target;
+            heatingTarget.textContent = controles.heating_target;
+        }
+
+        console.log('✓ Contrôles chargés depuis la base de données:', controles);
+        addAlert('info', 'Chargement', 'Derniers paramètres appliqués restaurés');
+
+    } catch (err) {
+        console.error('Erreur lors du chargement des contrôles:', err);
+    }
+}
+
+// Fonction helper pour définir le bouton de mode actif
+function setModeButton(panel, mode) {
+    const buttons = panel.querySelectorAll('.mode-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    const activeBtn = panel.querySelector(`[data-mode="${mode}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
     }
 }
 
