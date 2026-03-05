@@ -100,24 +100,20 @@ function applyControls() {
     
     const controls = {
         irrigation: {
-            enabled: document.getElementById('irrigation-toggle')?.checked || false,
-            threshold: parseInt(document.getElementById('irrigation-slider')?.value || 30),
-            mode: getMode(panels[0])
+            mode: getMode(panels[0]),
+            threshold: parseInt(document.getElementById('irrigation-slider')?.value || 30)
         },
         misting: {
-            enabled: document.getElementById('mist-toggle')?.checked || false,
-            intensity: parseInt(document.getElementById('mist-slider')?.value || 50),
-            mode: getMode(panels[1])
+            mode: getMode(panels[1]),
+            intensity: parseInt(document.getElementById('mist-slider')?.value || 50)
         },
         ventilation: {
-            enabled: document.getElementById('ventilation-toggle')?.checked || false,
-            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3),
-            mode: getMode(panels[2])
+            mode: getMode(panels[2]),
+            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3)
         },
         heating: {
-            enabled: document.getElementById('heating-toggle')?.checked || false,
-            target: parseInt(document.getElementById('heating-slider')?.value || 20),
-            mode: getMode(panels[3])
+            mode: getMode(panels[3]),
+            target: parseInt(document.getElementById('heating-slider')?.value || 20)
         }
     };
     
