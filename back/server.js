@@ -183,6 +183,7 @@ async function getTCWData() {
         const h1 = await tcw.getH1(client);
         const h2 = await tcw.getH2(client);
         const h3 = await tcw.getH3(client);
+        const humair = await tcw.getHumAir(client);
         const relays = await tcw.getRelaysState(client);
 
         tcw.setTemperature(temp);
@@ -196,6 +197,7 @@ async function getTCWData() {
           h2: tcw.h2,
           h3: tcw.h3,
           humiditeSol: tcw.humiditeMoyenne,
+          humair : tcw.humair,
           relays,
           timestamp: tcw.timestamp
         });
