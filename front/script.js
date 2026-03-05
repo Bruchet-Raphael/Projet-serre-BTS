@@ -75,27 +75,49 @@ function setupControlsListeners() {
         document.getElementById('heating-target').textContent = e.target.value;
     });
     
+    // Mode Buttons - Inactif / Auto
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modeButtons = e.target.parentElement.querySelectorAll('.mode-btn');
+            modeButtons.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+        });
+    });
+    
     // Bouton Appliquer
     document.getElementById('apply-controls-btn')?.addEventListener('click', applyControls);
 }
 
 function applyControls() {
+    // Fonction helper pour récupérer le mode sélectionné
+    const getMode = (panelElement) => {
+        const activeBtn = panelElement.querySelector('.mode-btn.active');
+        return activeBtn?.getAttribute('data-mode') || 'inactive';
+    };
+    
+    // Récupérer les panneaux de contrôle
+    const panels = document.querySelectorAll('.control-panel');
+    
     const controls = {
         irrigation: {
             enabled: document.getElementById('irrigation-toggle')?.checked || false,
-            threshold: parseInt(document.getElementById('irrigation-slider')?.value || 30)
+            threshold: parseInt(document.getElementById('irrigation-slider')?.value || 30),
+            mode: getMode(panels[0])
         },
         misting: {
             enabled: document.getElementById('mist-toggle')?.checked || false,
-            intensity: parseInt(document.getElementById('mist-slider')?.value || 50)
+            intensity: parseInt(document.getElementById('mist-slider')?.value || 50),
+            mode: getMode(panels[1])
         },
         ventilation: {
             enabled: document.getElementById('ventilation-toggle')?.checked || false,
-            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3)
+            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3),
+            mode: getMode(panels[2])
         },
         heating: {
             enabled: document.getElementById('heating-toggle')?.checked || false,
-            target: parseInt(document.getElementById('heating-slider')?.value || 20)
+            target: parseInt(document.getElementById('heating-slider')?.value || 20),
+            mode: getMode(panels[3])
         }
     };
     
