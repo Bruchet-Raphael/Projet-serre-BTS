@@ -75,10 +75,39 @@ function setupControlsListeners() {
         document.getElementById('heating-target').textContent = e.target.value;
     });
     
-    // Mode Buttons - Inactif / Auto
-    document.querySelectorAll('.mode-btn').forEach(btn => {
+    // Récupérer les panneaux
+    const panels = document.querySelectorAll('.control-panel');
+    const ventilationPanel = panels[2];
+    const heatingPanel = panels[3];
+    
+    // Mode Buttons - Inactif / Actif / Auto
+    document.querySelectorAll('.mode-btn').forEach((btn, index) => {
         btn.addEventListener('click', (e) => {
             const modeButtons = e.target.parentElement.querySelectorAll('.mode-btn');
+            const selectedMode = e.target.getAttribute('data-mode');
+            
+            // Règle: Si ventilation est "active", chauffage ne peut pas être "active"
+            if (e.target.parentElement === heatingPanel.querySelector('.mode-buttons')) {
+                if (selectedMode === 'active') {
+                    const ventilationMode = ventilationPanel.querySelector('.mode-btn.active')?.getAttribute('data-mode');
+                    if (ventilationMode === 'active') {
+                        console.warn('Le chauffage ne peut pas être actif si la ventilation est active');
+                        return;
+                    }
+                }
+            }
+            
+            // Règle: Si ventilation devient "active", forcer chauffage en "inactive"
+            if (e.target.parentElement === ventilationPanel.querySelector('.mode-buttons')) {
+                if (selectedMode === 'active') {
+                    const heatingInactiveBtn = heatingPanel.querySelector('[data-mode="inactive"]');
+                    const heatingModeButtons = heatingPanel.querySelector('.mode-buttons').querySelectorAll('.mode-btn');
+                    heatingModeButtons.forEach(b => b.classList.remove('active'));
+                    heatingInactiveBtn.classList.add('active');
+                }
+            }
+            
+            // Mettre à jour le bouton cliqué
             modeButtons.forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
         });
