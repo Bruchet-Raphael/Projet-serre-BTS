@@ -453,6 +453,122 @@ async function regulateLoop() {
     });
 }
 
+// ========================================
+// 🔐 Admin Middleware
+// ========================================
+
+function isAdminMiddleware(req, res, next) {
+  const userId = req.user?.sub;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Utilisateur non authentifié' });
+  }
+
+  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
+  db.query(query, [userId], (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(403).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    const user = results[0];
+    if (user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès refusé : privilèges admin requis' });
+    }
+
+    next();
+  });
+}
+
+// ========================================
+// 🎛️ ROUTES CONTRÔLES (Ventilation, Chauffage, etc.)
+// ========================================
+
+// GET - Récupérer les derniers contrôles appliqués
+app.get('/api/controles', authMiddleware, (req, res) => {
+  const query = `
+    SELECT id, irrigation_mode, irrigation_threshold, 
+           misting_mode, misting_intensity,
+           ventilation_mode, ventilation_duration,
+           heating_mode, heating_target,
+           created_at
+    FROM controles
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: true, controles: null, message: 'Aucun contrôle enregistré' });
+    }
+
+    res.json({ success: true, controles: results[0] });
+  });
+});
+
+// POST - Applique et sauvegarde les contrôles (Admin uniquement)
+app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
+  const { irrigation, misting, ventilation, heating } = req.body;
+
+  // Validation des données
+  if (!irrigation || !misting || !ventilation || !heating) {
+    return res.status(400).json({ success: false, message: 'Paramètres incomplets' });
+  }
+
+  // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
+  if (ventilation.mode === 'active' && heating.mode === 'active') {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Le chauffage ne peut pas être actif si la ventilation est active' 
+    });
+  }
+
+  // Durée de ventilation : seulement si mode = 'active', max 6h
+  if (ventilation.mode === 'active' && (!ventilation.duration || ventilation.duration > 6 || ventilation.duration < 1)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Durée ventilation invalide (1-6h)' 
+    });
+  }
+
+  const query = `
+    INSERT INTO controles 
+    (irrigation_mode, irrigation_threshold, 
+     misting_mode, misting_intensity,
+     ventilation_mode, ventilation_duration,
+     heating_mode, heating_target,
+     created_at, updated_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+  `;
+
+  const values = [
+    irrigation.mode,
+    irrigation.threshold || null,
+    misting.mode,
+    misting.intensity || null,
+    ventilation.mode,
+    ventilation.duration || null,
+    heating.mode,
+    heating.target || null,
+    req.user.sub
+  ];
+
+  db.query(query, values, (err, results) => {
+    if (err) {
+      console.error('Erreur insert controles:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Contrôles appliqués et sauvegardés',
+      controleId: results.insertId
+    });
+  });
+});
+
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
 

@@ -163,11 +163,8 @@ function applyControls() {
     
     console.log('Paramètres appliqués:', controls);
     
-    // Afficher une notification de succès
-    showApplyNotification();
-    
-    // Ici tu peux envoyer les données au backend
-    // sendControlsToBackend(controls);
+    // Envoyer les contrôles au backend
+    sendControlsToBackend(controls);
 }
 
 function showApplyNotification() {
@@ -182,6 +179,49 @@ function showApplyNotification() {
         btn.innerHTML = originalText;
         btn.style.background = '';
     }, 2000);
+}
+
+async function sendControlsToBackend(controls) {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        console.error('Token manquant, redirection login');
+        window.location.href = '/front/login.html';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${CONFIG.apiUrl}/controles`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(controls)
+        });
+
+        const data = await response.json();
+
+        if (response.status === 403) {
+            console.error('Accès refusé:', data.message);
+            addAlert('danger', 'Accès refusé', data.message || 'Vous n\'avez pas les droits admin');
+            return;
+        }
+
+        if (!data.success) {
+            console.error('Erreur serveur:', data.message);
+            addAlert('danger', 'Erreur', data.message || 'Une erreur est survenue');
+            return;
+        }
+
+        // Afficher une notification de succès
+        showApplyNotification();
+        addAlert('success', 'Succès', 'Paramètres appliqués et sauvegardés en base de données');
+
+    } catch (err) {
+        console.error('Erreur réseau:', err);
+        addAlert('danger', 'Erreur réseau', 'Impossible de communiquer avec le serveur');
+    }
 }
 
 // ========================================
