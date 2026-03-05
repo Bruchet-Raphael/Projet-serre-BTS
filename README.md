@@ -1,7 +1,7 @@
 
 ---
 
-## **Option 2 — Moderne et orienté développeurs**
+## **Option — Moderne et orienté développeurs**
 
 ```markdown
 # 🔧 Projet — La Serre
