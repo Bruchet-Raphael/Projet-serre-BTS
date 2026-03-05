@@ -67,8 +67,9 @@ function setupControlsListeners() {
         document.getElementById('mist-intensity').textContent = e.target.value;
     });
     
-    document.getElementById('ventilation-slider')?.addEventListener('input', (e) => {
-        document.getElementById('ventilation-speed').textContent = e.target.value;
+    // Slider de durée de ventilation
+    document.getElementById('ventilation-duration-slider')?.addEventListener('input', (e) => {
+        document.getElementById('ventilation-duration').textContent = e.target.value;
     });
     
     document.getElementById('heating-slider')?.addEventListener('input', (e) => {
@@ -79,6 +80,8 @@ function setupControlsListeners() {
     const panels = document.querySelectorAll('.control-panel');
     const ventilationPanel = panels[2];
     const heatingPanel = panels[3];
+    const ventilationDurationSlider = document.getElementById('ventilation-duration-slider');
+    const ventilationDurationInfo = document.querySelector('.duration-info');
     
     // Mode Buttons - Inactif / Actif / Auto
     document.querySelectorAll('.mode-btn').forEach((btn, index) => {
@@ -104,6 +107,18 @@ function setupControlsListeners() {
                     const heatingModeButtons = heatingPanel.querySelector('.mode-buttons').querySelectorAll('.mode-btn');
                     heatingModeButtons.forEach(b => b.classList.remove('active'));
                     heatingInactiveBtn.classList.add('active');
+                }
+                
+                // Gestion du slider de durée pour ventilation
+                if (selectedMode === 'active') {
+                    ventilationDurationSlider.disabled = false;
+                    ventilationDurationInfo.textContent = 'Durée: max 6h';
+                } else if (selectedMode === 'auto') {
+                    ventilationDurationSlider.disabled = true;
+                    ventilationDurationInfo.textContent = 'Mode Auto: paramètre global';
+                } else {
+                    ventilationDurationSlider.disabled = true;
+                    ventilationDurationInfo.textContent = '';
                 }
             }
             
@@ -138,7 +153,7 @@ function applyControls() {
         },
         ventilation: {
             mode: getMode(panels[2]),
-            speed: parseInt(document.getElementById('ventilation-slider')?.value || 3)
+            duration: getMode(panels[2]) === 'active' ? parseInt(document.getElementById('ventilation-duration-slider')?.value || 3) : null
         },
         heating: {
             mode: getMode(panels[3]),

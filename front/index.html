@@ -245,8 +245,14 @@
                             <button class="mode-btn" data-mode="auto">Auto</button>
                         </div>
                         <div class="control-settings">
-                            <label class="settings-label">Vitesse: <span id="ventilation-speed">3</span>/5</label>
-                            <input type="range" id="ventilation-slider" min="1" max="5" value="3" class="slider">
+                            <label class="settings-label">
+                                <svg class="hourglass-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 2h12v6h-2l2 4-2 4h2v6H6v-6h2l-2-4 2-4H6V2z" />
+                                </svg>
+                                Durée: <span id="ventilation-duration">3</span>h
+                            </label>
+                            <input type="range" id="ventilation-duration-slider" min="1" max="6" value="3" class="slider" disabled>
+                            <small class="duration-info" style="color: #999; font-size: 0.75rem;">Mode Auto: paramètre global</small>
                         </div>
                     </div>
                 </div>
