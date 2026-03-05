@@ -59,6 +59,14 @@ async setRelay3(client) {
   await client.writeSingleCoil(102, !s.response._body.valuesAsArray[0]);
 }
 
+async getHumAir(client){
+    const reg = await client.readHoldingRegisters(19802, 2);
+    const buf = Buffer.alloc(4);
+    buf.writeUInt16BE(reg.response._body.valuesAsArray[0], 0);
+    buf.writeUInt16BE(reg.response._body.valuesAsArray[1], 2);
+    return buf.readFloatBE(0); 
+}
+
 async setRelay4(client) {
   const s = await client.readCoils(103, 1);
   await client.writeSingleCoil(103, !s.response._body.valuesAsArray[0]);
@@ -85,6 +93,7 @@ async setRelay4(client) {
     const h1 = await this.getH1(client);
     const h2 = await this.getH2(client);
     const h3 = await this.getH3(client);
+    const humair = await this.getHumAir(client);
     const relays = await this.getRelaysState(client);
 
     this.setTemperature(temperature);
@@ -96,6 +105,7 @@ async setRelay4(client) {
         h2: this.h2,
         h3: this.h3,
         humiditeSol: this.humiditeMoyenne,
+        humair : this.humair,
         relays,
         timestamp: this.timestamp
     };
