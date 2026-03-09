@@ -188,6 +188,7 @@ async function getTCWData() {
 
         tcw.setTemperature(temp);
         tcw.setHumidites(h1, h2, h3);
+        tcw.setHumAir(humair);
 
         socket.end();
 

@@ -116,6 +116,10 @@ async setRelay4(client) {
         this.timestamp = new Date();
     }
 
+    setHumAir(value){
+        this.humair = value;
+    }
+
     setHumidites(h1, h2, h3) {
         this.h1 = h1;
         this.h2 = h2;
