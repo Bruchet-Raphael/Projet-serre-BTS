@@ -13,6 +13,7 @@ const appState = {
     sensors: {
         temperature: null, // TCW241
         humidity: null,    // TCW241
+        humAir: null,      // Humidité de l'air (TCW241)
         
         // --- [ETUDIANT 2] Ajouts EAU ---
         consoEau: 0,
@@ -359,6 +360,7 @@ async function fetchSensorData() {
         updateSensorData({
             temperature: parseFloat(data.temperature),
             humidity: parseFloat(data.humiditeSol),
+            humAir: parseFloat(data.humair),
             
             // Récupération de tes données
             consoEau: parseFloat(data.consoEau || 0),
@@ -446,6 +448,7 @@ function updateSensorData(data) {
     // Stockage dans l'état global
     appState.sensors.temperature = data.temperature;
     appState.sensors.humidity = data.humidity;
+    appState.sensors.humAir = data.humAir;
     appState.sensors.consoEau = data.consoEau;
     appState.sensors.cuvePleine = data.cuvePleine;
     appState.sensors.reseauPluie = data.reseauPluie;
@@ -457,7 +460,7 @@ function updateSensorData(data) {
 }
 
 function updateDisplay() {
-    const { temperature, humidity, consoEau, cuvePleine, reseauPluie } = appState.sensors;
+    const { temperature, humidity, humAir, consoEau, cuvePleine, reseauPluie } = appState.sensors;
 
     // --- Affichage TCW (Existant) ---
     document.getElementById('hero-temp').textContent =
@@ -468,6 +471,7 @@ function updateDisplay() {
 
     updateCard('temp', temperature, '°C', getTemperatureStatus);
     updateCard('humidity', humidity, '%', getHumidityStatus);
+    updateCard('soil', humAir, '%', getHumidityStatus);
 
     // --- Affichage EAU (Nouveau) ---
     // Vérifie que tu as bien ajouté les balises HTML correspondantes dans index.html
