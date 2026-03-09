@@ -353,8 +353,8 @@ async function saveLoop() {
         const tcw = await readTCW241();
 
         const sql = `
-            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne, timestamp)
-            VALUES (?, ?, ?, ?, ?, NOW())
+            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne,humidite_air , timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
         `;
 
         db.query(sql, [
@@ -362,6 +362,7 @@ async function saveLoop() {
             tcw.h1,
             tcw.h2,
             tcw.h3,
+            tcw.humair,
             tcw.humiditeMoyenne
         ]);
 
