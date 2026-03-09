@@ -27,10 +27,12 @@ const appState = {
 const chartData = {
     timestamps: [],
     temperature: [],
-    humidity: []
+    humidity: [],
+    humAir: []
 };
 
 let charts = {};
+let chartViewOffset = 0;  // Pour naviguer dans l'historique
 
 // ========================================
 // INITIALISATION
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCharts();
     startDataPolling();
     setupControlsListeners();
+    setupChartNavigation();
     loadControles();
 });
 
@@ -605,6 +608,47 @@ function displayAlert(alert) {
 }
 
 // ========================================
+// NAVIGATION GRAPHIQUES
+// ========================================
+
+function setupChartNavigation() {
+    const btnPrev = document.getElementById('btn-chart-prev');
+    const btnNext = document.getElementById('btn-chart-next');
+
+    if (!btnPrev || !btnNext) return;
+
+    btnPrev.addEventListener('click', () => {
+        chartViewOffset = Math.min(chartViewOffset + 10, 100);
+        // Récupérer et afficher les données
+        const allData = [];
+        for (let i = 0; i < chartData.timestamps.length; i++) {
+            allData.push({
+                timestamp: chartData.timestamps[i],
+                temperature: chartData.temperature[i],
+                humiditeMoyenne: chartData.humidity[i],
+                humAir: chartData.humAir[i]
+            });
+        }
+        updateChartsWithHistorique(allData);
+    });
+
+    btnNext.addEventListener('click', () => {
+        chartViewOffset = Math.max(chartViewOffset - 10, 0);
+        // Récupérer et afficher les données
+        const allData = [];
+        for (let i = 0; i < chartData.timestamps.length; i++) {
+            allData.push({
+                timestamp: chartData.timestamps[i],
+                temperature: chartData.temperature[i],
+                humiditeMoyenne: chartData.humidity[i],
+                humAir: chartData.humAir[i]
+            });
+        }
+        updateChartsWithHistorique(allData);
+    });
+}
+
+// ========================================
 // GRAPHIQUES DYNAMIQUES
 // ========================================
 
@@ -635,6 +679,18 @@ function initializeCharts() {
                         backgroundColor: 'rgba(33, 150, 243, 0.15)',
                         tension: 0.4,
                         fill: true,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y1'
+                    },
+                    { 
+                        label: 'Humidité Air (%)', 
+                        data: [], 
+                        borderColor: '#FF9800', 
+                        backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                        tension: 0.4,
+                        fill: false,
                         borderWidth: 2,
                         pointRadius: 3,
                         pointHoverRadius: 6,
@@ -759,9 +815,20 @@ async function fetchHistorique24h() {
 function updateChartsWithHistorique(data) {
     if (!data || data.length === 0) return;
 
-    // Limiter à 20 derniers points pour une meilleure lisibilité
-    const maxPoints = 20;
-    const historique = data.slice(-maxPoints);
+    // Calculer le nombre de points à afficher (100 maximum)
+    const maxPoints = Math.min(CONFIG.chartMaxPoints, 100);
+    
+    // Appliquer l'offset de navigation
+    let historique = data.slice(-maxPoints);
+    const totalAvailable = data.length;
+    const currentStart = Math.max(0, totalAvailable - maxPoints);
+
+    // Si on a un offset, décaler les données affichées
+    if (chartViewOffset > 0 && chartViewOffset < historique.length) {
+        historique = historique.slice(0, historique.length - chartViewOffset);
+    }
+
+    if (historique.length === 0) return;
 
     // Préparer les labels (timestamps)
     const labels = historique.map(item => {
@@ -773,13 +840,46 @@ function updateChartsWithHistorique(data) {
     // Préparer les données
     const temperatures = historique.map(item => item.temperature);
     const humidites = historique.map(item => item.humiditeMoyenne);
+    const humAirs = historique.map(item => item.humAir);
+
+    // Calculer les informations à afficher
+    let infoText = 'En direct';
+    if (chartViewOffset > 0) {
+        const pointsBack = chartViewOffset;
+        if (pointsBack >= 60) {
+            const hoursBack = Math.floor(pointsBack / 12);
+            infoText = `Il y a ${hoursBack}h environ`;
+        } else {
+            infoText = `${pointsBack * 5} min en arrière`;
+        }
+    }
+    const infoElement = document.getElementById('chart-info');
+    if (infoElement) {
+        infoElement.textContent = infoText;
+    }
+
+    // Mettre à jour les boutons de navigation
+    updateNavigationButtons(chartViewOffset, data.length);
 
     // Mettre à jour le graphique Température & Humidité
     if (charts.temp) {
         charts.temp.data.labels = labels;
         charts.temp.data.datasets[0].data = temperatures;
         charts.temp.data.datasets[1].data = humidites;
-        charts.temp.update('none'); // 'none' = animation rapide sans redessiner tout
+        charts.temp.data.datasets[2].data = humAirs;
+        charts.temp.update('none');
+    }
+}
+
+function updateNavigationButtons(offset, totalPoints) {
+    const btnPrev = document.getElementById('btn-chart-prev');
+    const btnNext = document.getElementById('btn-chart-next');
+    
+    if (btnPrev) {
+        btnPrev.disabled = offset >= totalPoints - 20;
+    }
+    if (btnNext) {
+        btnNext.disabled = offset <= 0;
     }
 }
 
@@ -790,11 +890,13 @@ function addToHistory(data) {
     chartData.timestamps.push(timeLabel);
     chartData.temperature.push(data.temperature);
     chartData.humidity.push(data.humidity);
+    chartData.humAir.push(data.humAir);
 
     if (chartData.timestamps.length > CONFIG.chartMaxPoints) {
         chartData.timestamps.shift();
         chartData.temperature.shift();
         chartData.humidity.shift();
+        chartData.humAir.shift();
     }
 }
 

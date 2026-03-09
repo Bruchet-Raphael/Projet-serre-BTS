@@ -288,7 +288,22 @@
             <h2 class="section-title">Évolution des Données</h2>
             <div class="charts-grid-full">
                 <div class="chart-container-large">
-                    <h3 class="chart-title">Température & Humidité (Historique)</h3>
+                    <div class="chart-header">
+                        <h3 class="chart-title">Température & Humidité (Historique)</h3>
+                        <div class="chart-controls">
+                            <button id="btn-chart-prev" class="chart-nav-btn" title="Reculer dans l'historique">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <span id="chart-info" class="chart-info">En direct</span>
+                            <button id="btn-chart-next" class="chart-nav-btn" title="Avancer dans l'historique">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                     <div class="chart-wrapper">
                         <canvas id="temp-humidity-chart"></canvas>
                     </div>
