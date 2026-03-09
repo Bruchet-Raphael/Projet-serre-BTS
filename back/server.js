@@ -331,9 +331,11 @@ async function readTCW241() {
                 const h1 = await tcw.getH1(client);
                 const h2 = await tcw.getH2(client);
                 const h3 = await tcw.getH3(client);
+                const humair = await tcw.getHumAir(client);
 
                 tcw.setTemperature(temp);
                 tcw.setHumidites(h1, h2, h3);
+                tcw.setHumAir(humair);
 
                 socket.end();
                 resolve(tcw);
@@ -353,7 +355,7 @@ async function saveLoop() {
         const tcw = await readTCW241();
 
         const sql = `
-            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne,humidite_air , timestamp)
+            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne ,humidite_air , timestamp)
             VALUES (?, ?, ?, ?, ?, ?, NOW())
         `;
 
@@ -362,8 +364,8 @@ async function saveLoop() {
             tcw.h1,
             tcw.h2,
             tcw.h3,
-            tcw.humair,
-            tcw.humiditeMoyenne
+            tcw.humiditeMoyenne,
+            tcw.humair
         ]);
 
     } catch (err) {
