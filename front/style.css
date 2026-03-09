@@ -741,12 +741,33 @@ body {
     gap: 1.5rem;
 }
 
+.charts-grid-full {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
 .chart-container {
     width: 500px;
     height: 300px;       
     max-width: 100%;    
     margin: 0 auto;     
     position: relative;
+}
+
+.chart-container-large {
+    width: 100%;
+    position: relative;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 500px;
+    width: 100%;
 }
 
 

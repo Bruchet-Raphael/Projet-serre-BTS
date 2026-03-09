@@ -6,7 +6,7 @@ const CONFIG = {
     // Si tu es sur la VM, vérifie que l'IP ici est la bonne pour accéder au back
     apiUrl: 'http://172.29.160.160/api', // Ou '/api' si le front est servi par node
     updateInterval: 5000,
-    chartMaxPoints: 20,
+    chartMaxPoints: 100,
 };
 
 const appState = {
@@ -620,33 +620,108 @@ function initializeCharts() {
                         label: 'Température (°C)', 
                         data: [], 
                         borderColor: '#F44336', 
-                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        backgroundColor: 'rgba(244, 67, 54, 0.15)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y'
                     },
                     { 
                         label: 'Humidité (%)', 
                         data: [], 
                         borderColor: '#2196F3', 
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        backgroundColor: 'rgba(33, 150, 243, 0.15)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y1'
                     }
                 ]
             },
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 12 },
+                        displayColors: true,
+                        borderColor: '#ddd',
+                        borderWidth: 1,
+                        boxPadding: 6
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: false,
-                        max: 100
+                        type: 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Température (°C)',
+                            font: { size: 13, weight: 'bold' }
+                        },
+                        min: -100,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: true
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Humidité (%)',
+                            font: { size: 13, weight: 'bold' }
+                        },
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 15,
+                            font: {
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            drawBorder: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
                     }
                 }
             }
