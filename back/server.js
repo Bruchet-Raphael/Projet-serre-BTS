@@ -99,7 +99,7 @@ app.post('/api/login', (req, res) => {
       const payload = { sub: user.Id || user.id || user.ID, login: user.Login, jti };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
 
-      return res.json({ success: true, message: 'Connexion réussie', token });
+      return res.json({ success: true, message: 'Connexion réussie', token, role: user.role || 'user' });
     });
   });
 });
@@ -571,6 +571,79 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
       message: 'Contrôles appliqués et sauvegardés',
       controleId: results.insertId
     });
+  });
+});
+
+// ========================================
+// 🔧 ROUTES ADMIN
+// ========================================
+
+// GET - Liste de tous les utilisateurs (Admin uniquement)
+app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
+  const query = 'SELECT id, login, mail, role FROM Utilisateur ORDER BY login ASC';
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Erreur récupération utilisateurs:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    res.json({ 
+      success: true, 
+      users: results,
+      count: results.length
+    });
+  });
+});
+
+// GET - Récupérer l'historique des actions (Admin uniquement)
+app.get('/api/admin/logs', authMiddleware, isAdminMiddleware, (req, res) => {
+  const query = `
+    SELECT 
+      id, 
+      user_id, 
+      action, 
+      details, 
+      timestamp 
+    FROM AuditLog 
+    ORDER BY timestamp DESC 
+    LIMIT 500`;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Erreur récupération logs:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    res.json({ 
+      success: true, 
+      logs: results || [],
+      count: results ? results.length : 0
+    });
+  });
+});
+
+// PUT - Modifier le rôle d'un utilisateur (Admin uniquement)
+app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
+  const { userId } = req.params;
+  const { newRole } = req.body;
+
+  if (!newRole || !['admin', 'user'].includes(newRole)) {
+    return res.status(400).json({ success: false, message: 'Rôle invalide' });
+  }
+
+  const query = 'UPDATE Utilisateur SET role = ? WHERE id = ?';
+  db.query(query, [newRole, userId], (err, results) => {
+    if (err) {
+      console.error('Erreur mise à jour rôle:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+    }
+
+    res.json({ success: true, message: 'Rôle mis à jour avec succès' });
   });
 });
 

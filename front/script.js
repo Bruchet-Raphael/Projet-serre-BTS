@@ -400,7 +400,7 @@ function updateAuthButton() {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const btn = document.getElementById("btn-auth");
-    const btnAdmin = document.getElementById("btn-admin");
+    const navAdmin = document.getElementById("nav-admin");
 
     if (token) {
         // --- CAS : UTILISATEUR CONNECTÉ ---
@@ -408,9 +408,9 @@ function updateAuthButton() {
         btn.style.backgroundColor = "#e74c3c"; // Rouge
         btn.style.color = "white";
         
-        // Afficher le bouton Admin si c'est un admin
-        if (role === 'admin' && btnAdmin) {
-            btnAdmin.style.display = "inline-block";
+        // Afficher le lien Admin dans la navbar si c'est un admin
+        if (role === 'admin' && navAdmin) {
+            navAdmin.style.display = "inline-block";
         }
     } else {
         // --- CAS : UTILISATEUR NON CONNECTÉ ---
@@ -418,9 +418,9 @@ function updateAuthButton() {
         btn.style.backgroundColor = "#2ecc71"; // Vert
         btn.style.color = "white";
         
-        if (btnAdmin) btnAdmin.style.display = "none";
+        if (navAdmin) navAdmin.style.display = "none";
     }
-}
+
 
 function gererConnexion() {
     const token = localStorage.getItem("token");

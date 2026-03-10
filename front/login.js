@@ -31,6 +31,7 @@ async function login() {
         }
 
         localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role || "user");
 
         successBox.textContent = "Connexion réussie !";
         successBox.style.display = "block";
