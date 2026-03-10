@@ -212,6 +212,7 @@ async function getTCWData() {
           h2: null,
           h3: null,
           humiditeSol: null,
+          humair: null,
           relays: null
         });
       }
@@ -258,6 +259,7 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
         h2,
         h3,
         humidite_moyenne,
+        humidite_air,
         timestamp
       FROM capteurs
       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
@@ -276,7 +278,8 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
         h1: parseFloat(row.h1),
         h2: parseFloat(row.h2),
         h3: parseFloat(row.h3),
-        humiditeMoyenne: parseFloat(row.humidite_moyenne)
+        humiditeMoyenne: parseFloat(row.humidite_moyenne),
+        humAir: parseFloat(row.humidite_air)
       }));
 
       res.json({
