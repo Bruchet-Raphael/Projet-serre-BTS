@@ -60,28 +60,28 @@ class IOPoseidon {
         this.isConnected = false;
     }
 
-    // --- LECTURE (UpdateAll) ---
+    // --- LECTURE OPTIMISÉE (UpdateAll) ---
     async updateAll() {
         if (!this.isConnected) return false;
 
         try {
-            // 1. Lire Température (Holding Register)
-            const resTemp = await this.client.readHoldingRegisters(MAPPING.TEMP_EXT, 1);
-            this.data.temperature = resTemp.response.body.values[0];
+            // 1. LECTURE GROUPÉE (Block Read - Holding Registers)
+            // On demande 5 registres contigus en partant de l'adresse 1 (MAPPING.COMPTEUR)
+            // Le tableau "values" contiendra les index 0 à 4 correspondant aux adresses 1 à 5.
+            const resHolding = await this.client.readHoldingRegisters(MAPPING.COMPTEUR, 5);
+            
+            this.data.impulsions = resHolding.response.body.values[0];  // Index 0 = Adresse 1 (Compteur)
+            this.data.temperature = resHolding.response.body.values[4]; // Index 4 = Adresse 5 (Température)
 
-            // 2. Lire Compteur (Holding Register)
-            const resCompteur = await this.client.readHoldingRegisters(MAPPING.COMPTEUR, 1);
-            this.data.impulsions = resCompteur.response.body.values[0];
-
-            // 3. Lire Niveau Cuve (Discrete Input)
-            // Note: Sur certains simulateurs, c'est readCoils ou readDiscreteInputs
+            // 2. LECTURE DISCRETE INPUT (Capteur niveau)
+            // Requête séparée requise car c'est un autre type d'espace mémoire (Inputs vs Registers)
             const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
             this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
 
             return true;
 
         } catch (err) {
-            console.error('⚠️ [Poseidon] Erreur lecture:', err.message);
+            console.error('⚠️ [Poseidon] Erreur lecture groupée:', err.message);
             return false;
         }
     }

@@ -10,11 +10,12 @@ const Modbus = require('jsmodbus');
 const net = require('net');
 const bodyParser = require('body-parser');
 
-// --- [IMPORT] Ta classe Poseidon ---
+// --- Import de la classe Poseidon ---
 const IOPoseidon = require('./IOPoseidon');
+// --- Import de la classe TCW241   ---
+const TCW241 = require('./TCW241.js');
 
 dotenv.config();
-const TCW241 = require('./TCW241.js');
 
 const app = express();
 
