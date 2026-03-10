@@ -139,7 +139,7 @@ app.post('/api/inscription', (req, res) => {
 // ========================================
 
 const poseidon = new IOPoseidon('172.29.19.39'); // IP Simulateur
-let besoinEauSimule = false;
+let modeArrosageGlobal = 'inactive'; // --- [ETUDIANT 2] Variable d'écoute de l'IHM ---
 
 // Supervision automatique en arrière-plan
 async function startWaterSupervision() {
@@ -153,7 +153,11 @@ async function startWaterSupervision() {
       
       // 2. Exécuter les algorithmes
       await poseidon.gererChoixReseau();
-      await poseidon.gererPompe(besoinEauSimule);
+      
+      // --- [ETUDIANT 2] CORRECTION : Lien direct entre le Web et la Pompe ---
+      let besoinEau = (modeArrosageGlobal === 'active'); 
+      await poseidon.gererPompe(besoinEau);
+      // ----------------------------------------------------------------------
       
     }, 2000);
     
@@ -524,6 +528,10 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
   if (!irrigation || !misting || !ventilation || !heating) {
     return res.status(400).json({ success: false, message: 'Paramètres incomplets' });
   }
+
+  // --- [ETUDIANT 2] On capture l'état pour l'envoyer au Poseidon ---
+  modeArrosageGlobal = irrigation.mode;
+  // -----------------------------------------------------------------
 
   // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
   if (ventilation.mode === 'active' && heating.mode === 'active') {
