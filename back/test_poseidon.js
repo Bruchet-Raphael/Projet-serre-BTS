@@ -1,7 +1,7 @@
 const IOPoseidon = require('./IOPoseidon');
 
 // Configuration
-const IP_SIMULATEUR = '172.29.19.39'; // Vérifie ton IP
+const IP_SIMULATEUR = '172.29.17.186'; // Vérifie ton IP
 
 async function runTest() {
     console.log("--- TEST AUTOMATISÉ : ETUDIANT 2 (JS) ---");

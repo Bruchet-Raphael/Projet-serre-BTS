@@ -138,7 +138,7 @@ app.post('/api/inscription', (req, res) => {
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
-const poseidon = new IOPoseidon('172.29.19.39'); // IP Simulateur
+const poseidon = new IOPoseidon('172.29.17.186'); // IP Simulateur
 
 // --- [AJOUT ETUDIANT 2] Variables d'écoute de l'IHM et des capteurs ---
 let modeArrosageGlobal = 'inactive'; 
