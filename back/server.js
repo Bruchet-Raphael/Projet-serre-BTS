@@ -139,7 +139,12 @@ app.post('/api/inscription', (req, res) => {
 // ========================================
 
 const poseidon = new IOPoseidon('172.29.19.39'); // IP Simulateur
-let modeArrosageGlobal = 'inactive'; // --- [ETUDIANT 2] Variable d'écoute de l'IHM ---
+
+// --- [AJOUT ETUDIANT 2] Variables d'écoute de l'IHM et des capteurs ---
+let modeArrosageGlobal = 'inactive'; 
+let seuilArrosageGlobal = 30; // Valeur du curseur (en %)
+let humiditeSolGlobale = 50;  // Humidité de la terre lue par le TCW241
+// ----------------------------------------------------------------------
 
 // Supervision automatique en arrière-plan
 async function startWaterSupervision() {
@@ -151,13 +156,26 @@ async function startWaterSupervision() {
       // 1. Lire les capteurs
       await poseidon.updateAll();
       
-      // 2. Exécuter les algorithmes
+      // 2. Exécuter l'algorithme Réseau
       await poseidon.gererChoixReseau();
       
-      // --- [ETUDIANT 2] CORRECTION : Lien direct entre le Web et la Pompe ---
-      let besoinEau = (modeArrosageGlobal === 'active'); 
+      // --- [AJOUT ETUDIANT 2] L'INTELLIGENCE DU PILOTAGE IHM (Manuel & Auto) ---
+      let besoinEau = false; // Par défaut, pas besoin d'eau
+
+      if (modeArrosageGlobal === 'active') {
+          // Mode manuel : l'utilisateur force l'arrosage
+          besoinEau = true;
+      } 
+      else if (modeArrosageGlobal === 'auto') {
+          // Mode auto : on arrose SI la terre est plus sèche que le curseur
+          if (humiditeSolGlobale < seuilArrosageGlobal) {
+              besoinEau = true;
+          }
+      }
+      
+      // On envoie la décision à la sécurité matérielle
       await poseidon.gererPompe(besoinEau);
-      // ----------------------------------------------------------------------
+      // -------------------------------------------------------------------------
       
     }, 2000);
     
@@ -194,6 +212,12 @@ async function getTCWData() {
         tcw.setTemperature(temp);
         tcw.setHumidites(h1, h2, h3);
         tcw.setHumAir(humair);
+
+        // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
+        if (tcw.humiditeMoyenne !== null) {
+            humiditeSolGlobale = tcw.humiditeMoyenne;
+        }
+        // ----------------------------------------------------------------------------
 
         socket.end();
 
@@ -241,7 +265,6 @@ async function getTCWData() {
 // 🌍 EXPRESS STATIC
 // ========================================
 
-// Assure-toi que le chemin est bon par rapport à l'emplacement de server.js
 app.use(express.static('/var/www/html/Serre'));
 
 app.get('/', (req, res) => {
@@ -252,7 +275,6 @@ app.get('/', (req, res) => {
 // 🚀 ROUTE API UNIFIÉE
 // ========================================
 
-// Route pour obtenir l'historique 24h pour les graphiques
 app.get('/api/historique-24h', authMiddleware, (req, res) => {
   try {
     const sql = `
@@ -275,7 +297,6 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
       }
 
-      // Formater les données pour Chart.js
       const historique = results.map(row => ({
         timestamp: new Date(row.timestamp).toLocaleTimeString('fr-FR'),
         temperature: parseFloat(row.temperature),
@@ -301,10 +322,8 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
 
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
-    // 1. Récupérer les données TCW (Etudiant 1)
     const tcwData = await getTCWData();
 
-    // 2. Récupérer les données Poseidon (Etudiant 2 - depuis le cache mémoire)
     const waterData = {
         consoEau: poseidon.getConsommationLitres(),
         cuvePleine: poseidon.isCuvePleine(),
@@ -312,7 +331,6 @@ app.get('/api/info', authMiddleware, async (req, res) => {
         reseauPluie: (poseidon.getTemperature() >= 1 && poseidon.isCuvePleine())
     };
 
-    // 3. Fusionner et envoyer le tout
     res.json({ 
         success: true, 
         ...tcwData, 
@@ -344,6 +362,12 @@ async function readTCW241() {
                 tcw.setTemperature(temp);
                 tcw.setHumidites(h1, h2, h3);
                 tcw.setHumAir(humair);
+
+                // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
+                if (tcw.humiditeMoyenne !== null) {
+                    humiditeSolGlobale = tcw.humiditeMoyenne;
+                }
+                // ----------------------------------------------------------------------------
 
                 socket.end();
                 resolve(tcw);
@@ -529,9 +553,10 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
     return res.status(400).json({ success: false, message: 'Paramètres incomplets' });
   }
 
-  // --- [ETUDIANT 2] On capture l'état pour l'envoyer au Poseidon ---
+  // --- [AJOUT ETUDIANT 2] On capture l'état et le seuil pour le Poseidon ---
   modeArrosageGlobal = irrigation.mode;
-  // -----------------------------------------------------------------
+  seuilArrosageGlobal = irrigation.threshold || 30; // 30 par défaut si non fourni
+  // -------------------------------------------------------------------------
 
   // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
   if (ventilation.mode === 'active' && heating.mode === 'active') {
