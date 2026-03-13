@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControlsListeners();
     setupChartNavigation();
     loadControles();
+    updateAuthButton(); // Appel initial pour l'état de connexion
 });
 
 // ========================================
@@ -59,6 +60,12 @@ function initializeEventListeners() {
             e.target.classList.add('active');
         });
     });
+
+    // Écouteur pour le bouton de connexion/déconnexion
+    const btnAuth = document.getElementById("btn-auth");
+    if (btnAuth) {
+        btnAuth.addEventListener('click', gererConnexion);
+    }
 }
 
 // Gestion des contrôles automatiques
@@ -89,41 +96,47 @@ function setupControlsListeners() {
     const ventilationDurationInfo = document.querySelector('.duration-info');
     
     // Mode Buttons - Inactif / Actif / Auto
-    document.querySelectorAll('.mode-btn').forEach((btn, index) => {
+    document.querySelectorAll('.mode-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const modeButtons = e.target.parentElement.querySelectorAll('.mode-btn');
             const selectedMode = e.target.getAttribute('data-mode');
             
             // Règle: Si ventilation est "active", chauffage ne peut pas être "active"
-            if (e.target.parentElement === heatingPanel.querySelector('.mode-buttons')) {
+            if (heatingPanel && e.target.parentElement === heatingPanel.querySelector('.mode-buttons')) {
                 if (selectedMode === 'active') {
-                    const ventilationMode = ventilationPanel.querySelector('.mode-btn.active')?.getAttribute('data-mode');
+                    const ventilationMode = ventilationPanel?.querySelector('.mode-btn.active')?.getAttribute('data-mode');
                     if (ventilationMode === 'active') {
                         console.warn('Le chauffage ne peut pas être actif si la ventilation est active');
+                        addAlert('warning', 'Conflit', 'Le chauffage ne peut pas être actif si la ventilation est active');
                         return;
                     }
                 }
             }
             
             // Règle: Si ventilation devient "active", forcer chauffage en "inactive"
-            if (e.target.parentElement === ventilationPanel.querySelector('.mode-buttons')) {
+            if (ventilationPanel && e.target.parentElement === ventilationPanel.querySelector('.mode-buttons')) {
                 if (selectedMode === 'active') {
-                    const heatingInactiveBtn = heatingPanel.querySelector('[data-mode="inactive"]');
-                    const heatingModeButtons = heatingPanel.querySelector('.mode-buttons').querySelectorAll('.mode-btn');
-                    heatingModeButtons.forEach(b => b.classList.remove('active'));
-                    heatingInactiveBtn.classList.add('active');
+                    const heatingInactiveBtn = heatingPanel?.querySelector('[data-mode="inactive"]');
+                    const heatingModeButtons = heatingPanel?.querySelector('.mode-buttons')?.querySelectorAll('.mode-btn');
+                    
+                    if (heatingModeButtons && heatingInactiveBtn) {
+                        heatingModeButtons.forEach(b => b.classList.remove('active'));
+                        heatingInactiveBtn.classList.add('active');
+                    }
                 }
                 
                 // Gestion du slider de durée pour ventilation
-                if (selectedMode === 'active') {
-                    ventilationDurationSlider.disabled = false;
-                    ventilationDurationInfo.textContent = 'Durée: max 6h';
-                } else if (selectedMode === 'auto') {
-                    ventilationDurationSlider.disabled = true;
-                    ventilationDurationInfo.textContent = 'Mode Auto: paramètre global';
-                } else {
-                    ventilationDurationSlider.disabled = true;
-                    ventilationDurationInfo.textContent = '';
+                if (ventilationDurationSlider && ventilationDurationInfo) {
+                    if (selectedMode === 'active') {
+                        ventilationDurationSlider.disabled = false;
+                        ventilationDurationInfo.textContent = 'Durée: max 6h';
+                    } else if (selectedMode === 'auto') {
+                        ventilationDurationSlider.disabled = true;
+                        ventilationDurationInfo.textContent = 'Mode Auto: paramètre global';
+                    } else {
+                        ventilationDurationSlider.disabled = true;
+                        ventilationDurationInfo.textContent = '';
+                    }
                 }
             }
             
@@ -140,6 +153,7 @@ function setupControlsListeners() {
 function applyControls() {
     // Fonction helper pour récupérer le mode sélectionné
     const getMode = (panelElement) => {
+        if (!panelElement) return 'inactive';
         const activeBtn = panelElement.querySelector('.mode-btn.active');
         return activeBtn?.getAttribute('data-mode') || 'inactive';
     };
@@ -191,7 +205,7 @@ async function sendControlsToBackend(controls) {
     
     if (!token) {
         console.error('Token manquant, redirection login');
-        window.location.href = '/front/login.html';
+        window.location.href = 'login.html'; // CORRIGÉ: Chemin relatif
         return;
     }
 
@@ -258,6 +272,8 @@ async function loadControles() {
 
         const controles = data.controles;
         const panels = document.querySelectorAll('.control-panel');
+        
+        if (panels.length < 4) return; // Sécurité si les panneaux ne sont pas trouvés
 
         // ========================================
         // 1. IRRIGATION
@@ -290,20 +306,21 @@ async function loadControles() {
         setModeButton(ventilationPanel, controles.ventilation_mode);
         const ventilationDurationSlider = document.getElementById('ventilation-duration-slider');
         const ventilationDuration = document.getElementById('ventilation-duration');
+        const durationInfo = document.querySelector('.duration-info');
         
         // Mettre à jour le slider selon le mode
         if (controles.ventilation_mode === 'active' && ventilationDurationSlider) {
             ventilationDurationSlider.disabled = false;
             if (controles.ventilation_duration !== null) {
                 ventilationDurationSlider.value = controles.ventilation_duration;
-                ventilationDuration.textContent = controles.ventilation_duration;
+                if(ventilationDuration) ventilationDuration.textContent = controles.ventilation_duration;
             }
         } else if (controles.ventilation_mode === 'auto' && ventilationDurationSlider) {
             ventilationDurationSlider.disabled = true;
-            document.querySelector('.duration-info').textContent = 'Mode Auto: paramètre global';
+            if(durationInfo) durationInfo.textContent = 'Mode Auto: paramètre global';
         } else if (ventilationDurationSlider) {
             ventilationDurationSlider.disabled = true;
-            document.querySelector('.duration-info').textContent = '';
+            if(durationInfo) durationInfo.textContent = '';
         }
 
         // ========================================
@@ -315,11 +332,11 @@ async function loadControles() {
         const heatingTarget = document.getElementById('heating-target');
         if (heatingSlider && controles.heating_target !== null) {
             heatingSlider.value = controles.heating_target;
-            heatingTarget.textContent = controles.heating_target;
+            if(heatingTarget) heatingTarget.textContent = controles.heating_target;
         }
 
         console.log('✓ Contrôles chargés depuis la base de données:', controles);
-        addAlert('info', 'Chargement', 'Derniers paramètres appliqués restaurés');
+        // addAlert('info', 'Chargement', 'Derniers paramètres appliqués restaurés'); // Optionnel
 
     } catch (err) {
         console.error('Erreur lors du chargement des contrôles:', err);
@@ -328,6 +345,7 @@ async function loadControles() {
 
 // Fonction helper pour définir le bouton de mode actif
 function setModeButton(panel, mode) {
+    if (!panel) return;
     const buttons = panel.querySelectorAll('.mode-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
     const activeBtn = panel.querySelector(`[data-mode="${mode}"]`);
@@ -353,25 +371,33 @@ async function fetchSensorData() {
 
         if (response.status === 401) {
             localStorage.removeItem("token");
-            window.location.href = "/front/login.html";
-            return;
+            // window.location.href = "login.html"; // CORRIGÉ: Désactivé pour ne pas forcer la redirection si on veut juste voir les données
+            console.warn("Non autorisé ou token expiré");
+            // On continue quand même pour essayer d'afficher les données publiques si l'API le permet
+        }
+
+        if (!response.ok && response.status !== 401) {
+             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        // Mise à jour unifiée (TCW + POSEIDON)
-        updateSensorData({
-            temperature: parseFloat(data.temperature),
-            humidity: parseFloat(data.humiditeSol),
-            humAir: parseFloat(data.humair),
-            
-            // Récupération de tes données
-            consoEau: parseFloat(data.consoEau || 0),
-            cuvePleine: data.cuvePleine,
-            reseauPluie: data.reseauPluie
-        });
-
-        updateConnectionStatus(true);
+        if (data.success) {
+            // Mise à jour unifiée (TCW + POSEIDON)
+            updateSensorData({
+                temperature: data.temperature !== null ? parseFloat(data.temperature) : null,
+                humidity: data.humiditeSol !== null ? parseFloat(data.humiditeSol) : null,
+                humAir: data.humair !== null ? parseFloat(data.humair) : null,
+                
+                // Récupération de tes données
+                consoEau: data.consoEau !== null ? parseFloat(data.consoEau) : 0,
+                cuvePleine: data.cuvePleine || false,
+                reseauPluie: data.reseauPluie || false
+            });
+            updateConnectionStatus(true);
+        } else {
+             updateConnectionStatus(false);
+        }
 
     } catch (error) {
         console.error("Erreur API :", error);
@@ -391,7 +417,6 @@ function startDataPolling() {
 }
 
 
-
 // ==========================================
 // 🔐 GESTION CONNEXION / DECONNEXION
 // ==========================================
@@ -401,6 +426,8 @@ function updateAuthButton() {
     const role = localStorage.getItem("role");
     const btn = document.getElementById("btn-auth");
     const navAdmin = document.getElementById("nav-admin");
+
+    if (!btn) return; // Sécurité si le bouton n'existe pas sur la page actuelle
 
     if (token) {
         // --- CAS : UTILISATEUR CONNECTÉ ---
@@ -420,7 +447,7 @@ function updateAuthButton() {
         
         if (navAdmin) navAdmin.style.display = "none";
     }
-
+}
 
 function gererConnexion() {
     const token = localStorage.getItem("token");
@@ -433,15 +460,12 @@ function gererConnexion() {
         
         // 2. On recharge la page ou on redirige vers login
         alert("Vous avez été déconnecté.");
-        window.location.href = "/front/login.html"; 
+        window.location.href = "login.html"; // CORRIGÉ: Chemin relatif
     } else {
         // --- ACTION : ALLER VERS CONNEXION ---
-        window.location.href = "/front/login.html";
+        window.location.href = "login.html"; // CORRIGÉ: Chemin relatif
     }
 }
-
-// Lancer la vérification au chargement de la page
-document.addEventListener("DOMContentLoaded", updateAuthButton);
 
 // ========================================
 // MISE À JOUR DE L'INTERFACE
@@ -466,19 +490,17 @@ function updateDisplay() {
     const { temperature, humidity, humAir, consoEau, cuvePleine, reseauPluie } = appState.sensors;
 
     // --- Affichage TCW (Existant) ---
-    document.getElementById('hero-temp').textContent =
-        temperature !== null ? `${temperature.toFixed(1)}°C` : '--';
+    const heroTemp = document.getElementById('hero-temp');
+    if(heroTemp) heroTemp.textContent = temperature !== null ? `${temperature.toFixed(1)}°C` : '--';
 
-    document.getElementById('hero-humidity').textContent =
-        humidity !== null ? `${humidity.toFixed(1)}%` : '--';
+    const heroHum = document.getElementById('hero-humidity');
+    if(heroHum) heroHum.textContent = humidity !== null ? `${humidity.toFixed(1)}%` : '--';
 
     updateCard('temp', temperature, '°C', getTemperatureStatus);
     updateCard('humidity', humidity, '%', getHumidityStatus);
     updateCard('soil', humAir, '%', getHumidityStatus);
 
     // --- Affichage EAU (Nouveau) ---
-    // Vérifie que tu as bien ajouté les balises HTML correspondantes dans index.html
-    
     // 1. Consommation
     const elConso = document.getElementById('valeur-conso');
     if (elConso) {
@@ -506,7 +528,7 @@ function updateCard(type, value, unit, statusFunction) {
     const statusElement = document.getElementById(`${type}-status`);
 
     if (valueElement && statusElement) {
-        if (value !== null) {
+        if (value !== null && value !== undefined && !isNaN(value)) {
             valueElement.textContent = value.toFixed(1) + unit;
             const status = statusFunction(value);
             statusElement.textContent = status.text;
@@ -566,10 +588,6 @@ function checkAlerts(data) {
     if (temperature !== null) {
         if (temperature > 32) addAlert('danger', 'Température élevée', `${temperature.toFixed(1)}°C`);
         else if (temperature < 15) addAlert('danger', 'Température basse', `${temperature.toFixed(1)}°C`);
-    }
-    // Tu peux ajouter des alertes pour la cuve ici
-    if (data.cuvePleine === false && data.reseauPluie === true) {
-         // Exemple d'alerte incohérence (ne devrait pas arriver avec tes algos)
     }
 }
 
@@ -797,8 +815,7 @@ async function fetchHistorique24h() {
         });
 
         if (response.status === 401) {
-            localStorage.removeItem("token");
-            window.location.href = "login.html";
+            console.warn("Token expiré pour l'historique");
             return;
         }
 
