@@ -19,6 +19,7 @@ async function login() {
         const response = await fetch(`${API_URL}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include", // Envoyer et recevoir les cookies
             body: JSON.stringify({ login, password })
         });
 
@@ -29,9 +30,6 @@ async function login() {
             errorBox.style.display = "block";
             return;
         }
-
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role || "user");
 
         successBox.textContent = "Connexion réussie !";
         successBox.style.display = "block";

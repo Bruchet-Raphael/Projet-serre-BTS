@@ -23,6 +23,7 @@ async function register() {
         const response = await fetch(`${API_URL}/inscription`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include", // Envoyer et recevoir les cookies
             body: JSON.stringify({ prenom, nom, email, username, password })
         });
 
@@ -36,8 +37,6 @@ async function register() {
 
         successBox.textContent = "Compte créé avec succès !";
         successBox.style.display = "block";
-
-        localStorage.setItem("token", data.token);
 
         setTimeout(() => {
             window.location.href = "/";

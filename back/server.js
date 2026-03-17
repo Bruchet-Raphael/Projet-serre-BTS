@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const Modbus = require('jsmodbus');
 const net = require('net');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
 // --- Import de la classe Poseidon ---
 const IOPoseidon = require('./IOPoseidon');
@@ -22,6 +23,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const PORT = process.env.PORT;
 const JWT_SECRET = process.env.CODE;
@@ -50,14 +52,47 @@ db.connect(err => {
 // ========================================
 
 function extractToken(req) {
+  // Cherche d'abord dans le cookie HttpOnly accessToken
+  if (req.cookies && req.cookies.accessToken) {
+    return req.cookies.accessToken;
+  }
+  // Sinon cherche dans l'header Authorization (pour compatibilité)
   const authHeader = req.headers.authorization || '';
   if (!authHeader.startsWith('Bearer ')) return null;
   return authHeader.slice(7);
 }
 
 const revokedTokens = new Set();
-function revokeToken(jti) { revokedTokens.add(jti); }
-function isRevoked(jti) { return revokedTokens.has(jti); }
+const refreshTokens = new Map(); // Stockage des refresh tokens: refreshTokenId -> { userId, jti, expiresAt }
+
+function revokeToken(jti) { 
+  revokedTokens.add(jti); 
+}
+
+function isRevoked(jti) { 
+  return revokedTokens.has(jti); 
+}
+
+function storeRefreshToken(refreshTokenId, userId, jti, expiresAt) {
+  refreshTokens.set(refreshTokenId, { userId, jti, expiresAt });
+}
+
+function revokeRefreshToken(refreshTokenId) {
+  refreshTokens.delete(refreshTokenId);
+}
+
+function isValidRefreshToken(refreshTokenId) {
+  const token = refreshTokens.get(refreshTokenId);
+  if (!token) return false;
+  
+  // Vérifier si le token n'a pas expiré
+  if (token.expiresAt < Date.now()) {
+    refreshTokens.delete(refreshTokenId);
+    return false;
+  }
+  
+  return true;
+}
 
 function authMiddleware(req, res, next) {
   const token = extractToken(req);
@@ -96,10 +131,37 @@ app.post('/api/login', (req, res) => {
       if (!isMatch) return res.status(401).json({ success: false, message: 'Mot de passe incorrect' });
 
       const jti = uuidv4();
-      const payload = { sub: user.Id || user.id || user.ID, login: user.Login, jti };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
+      const userId = user.Id || user.id || user.ID;
+      
+      // Access Token (15 minutes)
+      const accessPayload = { sub: userId, login: user.Login, jti, type: 'accessToken' };
+      const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
-      return res.json({ success: true, message: 'Connexion réussie', token, role: user.role || 'user' });
+      // Refresh Token (7 jours)
+      const refreshTokenId = uuidv4();
+      const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
+      const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
+
+      // Stocker le refresh token
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+      storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
+
+      // Envoyer les tokens dans des cookies HttpOnly Secure
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: true, 
+        sameSite: 'Lax',
+        maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
+      });
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true, 
+        sameSite: 'Lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
+      });
+
+      return res.json({ success: true, message: 'Connexion réussie', role: user.role || 'user' });
     });
   });
 });
@@ -124,14 +186,105 @@ app.post('/api/inscription', (req, res) => {
 
         const userId = results.insertId;
         const jti = uuidv4();
-        const payload = { sub: userId, login: username, jti };
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
 
-        return res.json({ success: true, message: 'Inscription réussie', token });
+        // Access Token (15 minutes)
+        const accessPayload = { sub: userId, login: username, jti, type: 'accessToken' };
+        const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
+
+        // Refresh Token (7 jours)
+        const refreshTokenId = uuidv4();
+        const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
+        const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
+
+        // Stocker le refresh token
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
+
+        // Envoyer les tokens dans des cookies HttpOnly Secure
+        res.cookie('accessToken', accessToken, {
+          httpOnly: true,
+          secure: true, 
+          sameSite: 'Lax',
+          maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: true, 
+          sameSite: 'Lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
+        });
+
+        return res.json({ success: true, message: 'Inscription réussie' });
       });
     });
   });
 });
+
+// POST - Logout (Déconnexion)
+app.post('/api/logout', authMiddleware, (req, res) => {
+  const jti = req.user?.jti;
+  
+  if (jti) {
+    // Révoquer le token en ajoutant son jti à la liste des tokens révoqués
+    revokeToken(jti);
+  }
+
+  // Supprimer les cookies
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax'
+  });
+  
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax'
+  });
+
+  return res.json({ success: true, message: 'Déconnexion réussie' });
+});
+
+// POST - Refresh Token (Obtenir un nouveau access token)
+app.post('/api/refresh-token', (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  
+  if (!refreshToken) {
+    return res.status(401).json({ success: false, message: 'Refresh token manquant' });
+  }
+
+  try {
+    const payload = jwt.verify(refreshToken, JWT_SECRET);
+    
+    if (payload.type !== 'refreshToken') {
+      return res.status(401).json({ success: false, message: 'Token invalide' });
+    }
+
+    const refreshTokenId = payload.refreshTokenId;
+    if (!isValidRefreshToken(refreshTokenId)) {
+      return res.status(401).json({ success: false, message: 'Refresh token invalide ou expiré' });
+    }
+
+    // Générer un nouvel access token
+    const userId = payload.sub;
+    const jti = uuidv4();
+    const newAccessPayload = { sub: userId, jti, type: 'accessToken' };
+    const newAccessToken = jwt.sign(newAccessPayload, JWT_SECRET, { expiresIn: '15m' });
+
+    res.cookie('accessToken', newAccessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    return res.json({ success: true, message: 'Access token rafraîchi' });
+
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Erreur lors du rafraîchissement du token' });
+  }
+})
 
 
 // ========================================
@@ -340,6 +493,27 @@ app.get('/api/info', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// GET - Récupérer le rôle de l'utilisateur connecté
+app.get('/api/user-role', authMiddleware, (req, res) => {
+  const userId = req.user.sub;
+
+  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    res.json({ 
+      success: true, 
+      role: results[0].role || 'user' 
+    });
+  });
 });
 
 async function readTCW241() {

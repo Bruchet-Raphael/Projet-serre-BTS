@@ -9,22 +9,20 @@
 <script>
 // Vérification session active au chargement
 async function checkAuth() {
-    const token = localStorage.getItem("token");
-    if(token){
-        try {
-            // Vérifie si le token est toujours valide
-            const response = await fetch("http://172.29.160.160/api/temp", {
-                method: "GET",
-                headers: { "Authorization": "Bearer " + token }
-            });
+    try {
+        // Le token est dans le cookie HttpOnly, donc pas besoin de le vérifier manuellement
+        // Juste faire un appel à une route protégée
+        const response = await fetch("http://172.29.160.160/api/info", {
+            method: "GET",
+            credentials: "include" // Envoyer les cookies
+        });
 
-            if (response.status === 200) {
-                window.location.href = "/"; // Déjà connecté -> Accueil
-            }
-        } catch (err) {
-            localStorage.removeItem("token"); // Token invalide
+        if (response.status === 200) {
+            window.location.href = "/"; // Déjà connecté -> Accueil
         }
-    } 
+    } catch (err) {
+        // Pas connecté, afficher la page de login
+    }
 }
 checkAuth();
 </script>
@@ -49,47 +47,7 @@ checkAuth();
     </p>
 </div>
 
-<script src="login.js"></script> <script>
-    // SCRIPT INTEGRE SI BESOIN DE REMPLACER LOGIN.JS
-    async function login() {
-        const loginVal = document.getElementById("email").value;
-        const passwordVal = document.getElementById("password").value;
-        const errorBox = document.getElementById("errorBox");
-
-        errorBox.innerText = "";
-
-        try {
-            const response = await fetch("http://172.29.160.160/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ login: loginVal, password: passwordVal })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Stockage du token et du rôle
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("role", data.role);
-                
-                // Redirection intelligente
-                if(data.role === 'admin') {
-                    // Optionnel: rediriger admin vers dashboard direct
-                    if(confirm("Connexion Admin réussie. Aller au Dashboard ?")) {
-                        window.location.href = "/front/admin.html";
-                        return;
-                    }
-                }
-                window.location.href = "/";
-            } else {
-                errorBox.innerText = "Erreur : " + data.message;
-            }
-        } catch (error) {
-            errorBox.innerText = "Erreur de connexion au serveur.";
-            console.error(error);
-        }
-    }
-</script>
+<script src="login.js"></script>
 
 </body>
 </html>

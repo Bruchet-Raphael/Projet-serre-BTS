@@ -12,27 +12,21 @@
 </head>
 <script>
     async function checkAuth() {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            window.location.href = "/front/login.html";
-            return;
-        }
-
         try {
             const response = await fetch("http://172.29.160.160/api/info", {
                 method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token
-                }
+                credentials: "include" // Envoyer les cookies HttpOnly
             });
 
             if (response.status === 401) {
-                localStorage.removeItem("token");
                 window.location.href = "/front/login.html";
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Non authentifié');
             }
         } catch (err) {
-            localStorage.removeItem("token");
             window.location.href = "/front/login.html";
         }
     }

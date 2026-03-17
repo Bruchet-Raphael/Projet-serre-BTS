@@ -201,21 +201,13 @@ function showApplyNotification() {
 }
 
 async function sendControlsToBackend(controls) {
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        console.error('Token manquant, redirection login');
-        window.location.href = 'login.html'; // CORRIGÉ: Chemin relatif
-        return;
-    }
-
     try {
         const response = await fetch(`${CONFIG.apiUrl}/controles`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
+            credentials: 'include', // Envoyer les cookies HttpOnly
             body: JSON.stringify(controls)
         });
 
@@ -224,6 +216,11 @@ async function sendControlsToBackend(controls) {
         if (response.status === 403) {
             console.error('Accès refusé:', data.message);
             addAlert('danger', 'Accès refusé', data.message || 'Vous n\'avez pas les droits admin');
+            return;
+        }
+
+        if (response.status === 401) {
+            window.location.href = '/front/login.html';
             return;
         }
 
@@ -248,22 +245,18 @@ async function sendControlsToBackend(controls) {
 // ========================================
 
 async function loadControles() {
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        console.log('Pas de token, aucun contrôle à charger');
-        return;
-    }
-
     try {
         const response = await fetch(`${CONFIG.apiUrl}/controles`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            credentials: 'include' // Envoyer les cookies HttpOnly
         });
 
         const data = await response.json();
+
+        if (response.status === 401) {
+            window.location.href = '/front/login.html';
+            return;
+        }
 
         if (!data.success || !data.controles) {
             console.log('Aucun contrôle enregistré en base');
@@ -360,20 +353,13 @@ function setModeButton(panel, mode) {
 
 async function fetchSensorData() {
     try {
-        const token = localStorage.getItem("token");
-        
-        // Utilisation d'une URL relative si possible, sinon garde CONFIG.apiUrl
         const response = await fetch(`${CONFIG.apiUrl}/info`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            credentials: 'include' // Envoyer les cookies HttpOnly
         });
 
         if (response.status === 401) {
-            localStorage.removeItem("token");
-            // window.location.href = "login.html"; // CORRIGÉ: Désactivé pour ne pas forcer la redirection si on veut juste voir les données
-            console.warn("Non autorisé ou token expiré");
-            // On continue quand même pour essayer d'afficher les données publiques si l'API le permet
+            window.location.href = "/front/login.html";
+            return;
         }
 
         if (!response.ok && response.status !== 401) {
@@ -421,49 +407,82 @@ function startDataPolling() {
 // 🔐 GESTION CONNEXION / DECONNEXION
 // ==========================================
 
-function updateAuthButton() {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+async function updateAuthButton() {
     const btn = document.getElementById("btn-auth");
     const navAdmin = document.getElementById("nav-admin");
 
     if (!btn) return; // Sécurité si le bouton n'existe pas sur la page actuelle
 
-    if (token) {
-        // --- CAS : UTILISATEUR CONNECTÉ ---
-        btn.innerText = "Déconnexion";
-        btn.style.backgroundColor = "#e74c3c"; // Rouge
-        btn.style.color = "white";
-        
-        // Afficher le lien Admin dans la navbar si c'est un admin
-        if (role === 'admin' && navAdmin) {
-            navAdmin.style.display = "inline-block";
+    try {
+        // Vérifier si l'utilisateur est authentifié en appelant une route protégée
+        const response = await fetch(`${CONFIG.apiUrl}/info`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            // L'utilisateur est connecté
+            btn.innerText = "Déconnexion";
+            btn.style.backgroundColor = "#e74c3c";
+            btn.style.color = "white";
+
+            // Récupérer le rôle de l'utilisateur
+            try {
+                const roleResponse = await fetch(`${CONFIG.apiUrl}/user-role`, {
+                    credentials: 'include'
+                });
+
+                if (roleResponse.ok) {
+                    const roleData = await roleResponse.json();
+                    if (roleData.role === 'admin' && navAdmin) {
+                        navAdmin.style.display = "inline-block";
+                    }
+                } else {
+                    if (navAdmin) navAdmin.style.display = "none";
+                }
+            } catch (err) {
+                console.error('Erreur lors du chargement du rôle:', err);
+                if (navAdmin) navAdmin.style.display = "none";
+            }
+        } else {
+            // L'utilisateur n'est pas connecté
+            btn.innerText = "Connexion";
+            btn.style.backgroundColor = "#2ecc71";
+            btn.style.color = "white";
+            if (navAdmin) navAdmin.style.display = "none";
         }
-    } else {
-        // --- CAS : UTILISATEUR NON CONNECTÉ ---
+    } catch (err) {
+        // Erreur réseau
         btn.innerText = "Connexion";
-        btn.style.backgroundColor = "#2ecc71"; // Vert
+        btn.style.backgroundColor = "#2ecc71";
         btn.style.color = "white";
-        
         if (navAdmin) navAdmin.style.display = "none";
     }
 }
 
-function gererConnexion() {
-    const token = localStorage.getItem("token");
+async function gererConnexion() {
+    try {
+        const response = await fetch(`${CONFIG.apiUrl}/info`, {
+            credentials: 'include'
+        });
 
-    if (token) {
-        // --- ACTION : SE DÉCONNECTER ---
-        // 1. On supprime tout ce qui est stocké
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        
-        // 2. On recharge la page ou on redirige vers login
-        alert("Vous avez été déconnecté.");
-        window.location.href = "login.html"; // CORRIGÉ: Chemin relatif
-    } else {
-        // --- ACTION : ALLER VERS CONNEXION ---
-        window.location.href = "login.html"; // CORRIGÉ: Chemin relatif
+        if (response.ok) {
+            // --- ACTION : SE DÉCONNECTER ---
+            // 1. Appeler l'API de logout
+            await fetch(`${CONFIG.apiUrl}/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            
+            // 2. Rediriger vers login
+            alert("Vous avez été déconnecté.");
+            window.location.href = "/front/login.html"; 
+        } else {
+            // --- ACTION : ALLER VERS CONNEXION ---
+            window.location.href = "/front/login.html";
+        }
+    } catch (err) {
+        alert("Erreur lors de la déconnexion.");
+        window.location.href = "/front/login.html";
     }
 }
 
@@ -806,16 +825,12 @@ function initializeCharts() {
 // Récupérer l'historique 24h depuis la base de données
 async function fetchHistorique24h() {
     try {
-        const token = localStorage.getItem("token");
-        
         const response = await fetch(`${CONFIG.apiUrl}/historique-24h`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            credentials: 'include'
         });
 
         if (response.status === 401) {
-            console.warn("Token expiré pour l'historique");
+            console.warn("Non authentifié pour l'historique");
             return;
         }
 
