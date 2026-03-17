@@ -55,9 +55,27 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeEventListeners() {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            e.target.classList.add('active');
+            const href = link.getAttribute('href');
+            
+            // Permettre au lien Admin de naviguer normalement
+            if (href && (href.startsWith('/') || href.startsWith('http'))) {
+                return; // Laisser la navigation par défaut
+            }
+            
+            // Pour les ancres, faire un smooth scroll
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                const targetId = href.substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Smooth scroll
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
         });
     });
 
