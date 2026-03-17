@@ -18,19 +18,29 @@
                 credentials: "include" // Envoyer les cookies HttpOnly
             });
 
-            if (response.status === 401) {
-                window.location.href = "/front/login.html";
-                return;
+            // Si authentifié, continuer
+            if (response.ok) {
+                return true;
             }
 
-            if (!response.ok) {
-                throw new Error('Non authentifié');
+            // Si non authentifié, rediriger vers login
+            if (response.status === 401) {
+                window.location.href = "/front/login.html";
+                return false;
             }
-        } catch (err) {
+
+            // Autre erreur réseau ou serveur
+            console.error("Erreur authentification:", response.status, response.statusText);
             window.location.href = "/front/login.html";
+            return false;
+        } catch (err) {
+            console.error("Erreur checkAuth:", err);
+            window.location.href = "/front/login.html";
+            return false;
         }
     }
 
+    // Vérifier l'authentification au chargement
     checkAuth();
 </script>
 

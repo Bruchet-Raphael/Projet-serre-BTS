@@ -20,7 +20,11 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// ✅ CORS configuré pour permettre credentials (cookies)
+app.use(cors({
+  origin: 'http://172.29.160.160', // Autoriser les requêtes du frontend
+  credentials: true // Permettre aux cookies d'être envoyés
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -146,17 +150,17 @@ app.post('/api/login', (req, res) => {
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
       storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
-      // Envoyer les tokens dans des cookies HttpOnly Secure
+      // Envoyer les tokens dans des cookies HttpOnly
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: true, 
+        secure: false, // false pour développement HTTP, true pour HTTPS production
         sameSite: 'Lax',
         maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: true, 
+        secure: false, // false pour développement HTTP, true pour HTTPS production
         sameSite: 'Lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
       });
@@ -200,17 +204,17 @@ app.post('/api/inscription', (req, res) => {
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
         storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
-        // Envoyer les tokens dans des cookies HttpOnly Secure
+        // Envoyer les tokens dans des cookies HttpOnly
         res.cookie('accessToken', accessToken, {
           httpOnly: true,
-          secure: true, 
+          secure: false, // false pour développement HTTP, true pour HTTPS production
           sameSite: 'Lax',
           maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
         });
 
         res.cookie('refreshToken', refreshToken, {
           httpOnly: true,
-          secure: true, 
+          secure: false, // false pour développement HTTP, true pour HTTPS production
           sameSite: 'Lax',
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
         });
@@ -233,13 +237,13 @@ app.post('/api/logout', authMiddleware, (req, res) => {
   // Supprimer les cookies
   res.clearCookie('accessToken', {
     httpOnly: true,
-    secure: true,
+    secure: false, // false pour développement HTTP, true pour HTTPS production
     sameSite: 'Lax'
   });
   
   res.clearCookie('refreshToken', {
     httpOnly: true,
-    secure: true,
+    secure: false, // false pour développement HTTP, true pour HTTPS production
     sameSite: 'Lax'
   });
 
@@ -274,7 +278,7 @@ app.post('/api/refresh-token', (req, res) => {
 
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
-      secure: true,
+      secure: false, // false pour développement HTTP, true pour HTTPS production
       sameSite: 'Lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });

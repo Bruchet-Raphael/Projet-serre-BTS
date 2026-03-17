@@ -8,23 +8,24 @@
 </head>
 <script>
 // Vérification session active au chargement
-async function checkAuth() {
+async function checkAuthLogin() {
     try {
-        // Le token est dans le cookie HttpOnly, donc pas besoin de le vérifier manuellement
-        // Juste faire un appel à une route protégée
         const response = await fetch("http://172.29.160.160/api/info", {
             method: "GET",
-            credentials: "include" // Envoyer les cookies
+            credentials: "include"
         });
 
-        if (response.status === 200) {
-            window.location.href = "/"; // Déjà connecté -> Accueil
+        // Si déjà authentifié, rediriger vers l'accueil
+        if (response.ok) {
+            window.location.href = "/";
         }
+        // Sinon, afficher la page de login (action par défaut)
     } catch (err) {
+        console.error("Erreur checkAuthLogin:", err);
         // Pas connecté, afficher la page de login
     }
 }
-checkAuth();
+checkAuthLogin();
 </script>
 <body>
 
