@@ -49,10 +49,9 @@
             </div>
             <ul class="nav-links">
                 <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
-                <li><a href="#monitoring" class="nav-link">Surveillance</a></li>
                 <li><a href="#controls" class="nav-link">Contrôles</a></li>
                 <li><a href="#history" class="nav-link">Historique</a></li>
-                <li><a href="#settings" class="nav-link">Paramètres</a></li>
+                <li><a href="#alerts" class="nav-link">Alertes</a></li>
                 <li><a href="/front/admin.html" class="nav-link" id="nav-admin" style="display: none; color: #FF9800;">⚙️ Admin</a></li>
             </ul>
             <button id="btn-auth" onclick="gererConnexion()"
@@ -88,7 +87,7 @@
     <!-- Main Content -->
     <main class="container">
         <!-- Quick Status Cards -->
-        <section class="quick-status">
+        <section class="quick-status" id="dashboard">
             <div class="status-card temperature-card">
                 <div class="card-icon">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -274,7 +273,7 @@
         </section>
 
         <!-- Charts Section -->
-        <section class="charts-section">
+        <section class="charts-section" id="history">
             <h2 class="section-title">Évolution des Données</h2>
             <div class="charts-grid-full">
                 <div class="chart-container-large">
@@ -302,7 +301,7 @@
         </section>
 
         <!-- Alerts Section -->
-        <section class="alerts-section">
+        <section class="alerts-section" id="alerts">
             <h2 class="section-title">Alertes & Notifications</h2>
             <div class="alerts-container" id="alerts-container">
                 <div class="alert alert-info">
