@@ -4,39 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - GreenHouse Connect</title>
-
     <link rel="stylesheet" href="/front/inscription.css">
 </head>
-
 <body>
 
-<div class="register-container">
-    <h2>Créer un compte</h2>
+    <!-- Feuilles de fond -->
+    <div class="leaf-1"></div>
+    <div class="leaf-2"></div>
+    <div class="leaf-3"></div>
+    <div class="leaf-4"></div>
+    <div class="leaf-5"></div>
+    <div class="leaf-6"></div>
 
-    <div id="errorBox" class="error"></div>
-    <div id="successBox" class="success"></div>
+    <!-- Particules de pollen -->
+    <div class="pollen-field">
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+    </div>
 
-    <label>Prénom</label>
-    <input type="text" id="prenom" placeholder="Votre prénom" required>
+    <!-- Carte d'inscription -->
+    <div class="register-container">
 
-    <label>Nom</label>
-    <input type="text" id="nom" placeholder="Votre nom" required>
+        <div class="login-header">
+            <div class="icon-leaf"></div>
+            <h2>Créer un compte</h2>
+            <div class="subtitle">Rejoignez l'écosystème · GreenHouse Connect</div>
+        </div>
 
-    <label>Email</label>
-    <input type="email" id="email" placeholder="exemple@mail.com" required>
+        <div class="separator">
+            <div class="sep-line"></div>
+            <div class="sep-leaf"></div>
+            <div class="sep-line"></div>
+        </div>
 
-    <label>Nom d'utilisateur</label>
-    <input type="text" id="username" placeholder="Identifiant" required>
+        <div id="errorBox"   class="error"></div>
+        <div id="successBox" class="success"></div>
 
-    <label>Mot de passe</label>
-    <input type="password" id="password" placeholder="••••••••" required>
+        <div class="field">
+            <label for="prenom">Prénom</label>
+            <div class="input-wrap">
+                <input type="text" id="prenom" placeholder="Votre prénom" required>
+            </div>
+        </div>
 
-    <button onclick="register()">Créer mon compte</button>
+        <div class="field">
+            <label for="nom">Nom</label>
+            <div class="input-wrap">
+                <input type="text" id="nom" placeholder="Votre nom" required>
+            </div>
+        </div>
 
-    <p class="login-link">
-        Déjà un compte ? <a href="/front/login.html">Se connecter</a>
-    </p>
-</div>
+        <div class="field">
+            <label for="email">Email</label>
+            <div class="input-wrap">
+                <input type="email" id="email" placeholder="exemple@mail.com" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="username">Nom d'utilisateur</label>
+            <div class="input-wrap">
+                <input type="text" id="username" placeholder="Identifiant" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="password">Mot de passe</label>
+            <div class="input-wrap">
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+        </div>
+
+        <button onclick="register()">Créer mon compte</button>
+
+        <div class="login-footer">
+            <div class="status-dot"></div>
+            <span>Écosystème connecté · Serre active</span>
+        </div>
+
+        <p class="login-link">Déjà un compte ? <a href="/front/login.html">Se connecter</a></p>
+
+    </div>
 
 <script src="/front/inscription.js"></script>
 
