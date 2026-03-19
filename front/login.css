@@ -1,80 +1,359 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
-    font-family: "Poppins", sans-serif;
-    background: linear-gradient(135deg, #000000, #08a71d);
+    font-family: "Outfit", sans-serif;
+    background-color: #0a1a0d;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    position: relative;
 }
 
+/* ─── Background ambiance ─── */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(34, 197, 94, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(16, 185, 129, 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 95, 70, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Floating botanical blobs */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(circle 2px at 15% 25%, rgba(74, 222, 128, 0.4) 0%, transparent 100%),
+        radial-gradient(circle 1px at 75% 60%, rgba(52, 211, 153, 0.3) 0%, transparent 100%),
+        radial-gradient(circle 2px at 40% 80%, rgba(74, 222, 128, 0.25) 0%, transparent 100%),
+        radial-gradient(circle 1px at 90% 30%, rgba(110, 231, 183, 0.35) 0%, transparent 100%),
+        radial-gradient(circle 1px at 25% 65%, rgba(52, 211, 153, 0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ─── Animated grid lines (greenhouse glass effect) ─── */
+.greenhouse-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(74, 222, 128, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74, 222, 128, 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ─── Main container ─── */
 .login-container {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    width: 350px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    animation: fadeIn 0.4s ease;
+    position: relative;
+    z-index: 1;
+    background: rgba(10, 26, 13, 0.75);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    padding: 2.8rem 2.4rem 2.4rem;
+    border-radius: 20px;
+    width: 380px;
+    border: 1px solid rgba(74, 222, 128, 0.18);
+    box-shadow:
+        0 0 0 1px rgba(74, 222, 128, 0.06),
+        0 24px 60px rgba(0, 0, 0, 0.55),
+        0 0 80px rgba(34, 197, 94, 0.06) inset;
+    animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+/* Corner accent lines */
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(74, 222, 128, 0.6) 30%,
+        rgba(52, 211, 153, 0.8) 50%,
+        rgba(74, 222, 128, 0.6) 70%,
+        transparent 100%);
+    border-radius: 0 0 2px 2px;
+}
+
+/* Bottom glow pulse */
+.login-container::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 40px;
+    background: radial-gradient(ellipse, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: breathe 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes breathe {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
+    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.15); }
+}
+
+/* ─── Header ─── */
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.10));
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    font-size: 1.6rem;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.12);
+    animation: iconGlow 3s ease-in-out infinite;
+}
+
+@keyframes iconGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.12); }
+    50%       { box-shadow: 0 0 30px rgba(34, 197, 94, 0.25); }
 }
 
 h2 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: #2E7D32;
+    font-family: "Space Mono", monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #86efac;
+    margin: 0 0 0.3rem 0;
+}
+
+.login-header .subtitle {
+    font-size: 0.78rem;
+    color: rgba(134, 239, 172, 0.45);
+    letter-spacing: 0.08em;
+    font-family: "Space Mono", monospace;
+    font-weight: 400;
+}
+
+/* ─── Form group ─── */
+.form-group {
+    margin-bottom: 1.2rem;
+    position: relative;
 }
 
 label {
+    display: block;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: #2C3E50;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(134, 239, 172, 0.6);
+    margin-bottom: 0.5rem;
+    font-family: "Space Mono", monospace;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.95rem;
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 0.2s;
 }
 
 input {
     width: 100%;
-    padding: 0.8rem;
-    margin-top: 0.3rem;
-    margin-bottom: 1rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
+    padding: 0.85rem 1rem 0.85rem 2.7rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(74, 222, 128, 0.14);
+    border-radius: 10px;
+    color: #d1fae5;
+    font-family: "Outfit", sans-serif;
+    font-size: 0.95rem;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+    margin: 0;
 }
 
+input::placeholder {
+    color: rgba(209, 250, 229, 0.2);
+    font-size: 0.9rem;
+}
+
+input:focus {
+    background: rgba(34, 197, 94, 0.06);
+    border-color: rgba(74, 222, 128, 0.5);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.08), 0 0 16px rgba(34, 197, 94, 0.06);
+}
+
+input:focus + .focus-line,
+input:focus ~ .focus-line {
+    transform: scaleX(1);
+}
+
+input:focus ~ .input-icon,
+.input-wrapper:focus-within .input-icon {
+    opacity: 0.9;
+}
+
+/* ─── Button ─── */
 button {
     width: 100%;
-    padding: 0.9rem;
-    background: #4CAF50;
+    padding: 0.95rem;
+    background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
     border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 600;
+    border-radius: 10px;
+    color: #fff;
+    font-family: "Space Mono", monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: 0.2s;
+    transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.3);
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 50%);
+    border-radius: inherit;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
 }
 
 button:hover {
-    background: #43A047;
+    background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+    box-shadow: 0 6px 28px rgba(22, 163, 74, 0.45);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0px);
+}
+
+button:active::after {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+    transition: 0s;
+}
+
+/* ─── Status messages ─── */
+.error,
+.success {
+    padding: 0.8rem 1rem;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-bottom: 1.2rem;
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: 0.01em;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .error {
-    background: #FFEBEE;
-    color: #C62828;
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    display: none;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
 }
 
 .success {
-    background: #E8F5E9;
-    color: #2E7D32;
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    display: none;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #86efac;
+}
+
+/* ─── Divider / footer ─── */
+.login-footer {
+    margin-top: 1.6rem;
+    text-align: center;
+    font-size: 0.72rem;
+    color: rgba(134, 239, 172, 0.25);
+    font-family: "Space Mono", monospace;
+    letter-spacing: 0.05em;
+}
+
+.login-footer span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    display: inline-block;
+    box-shadow: 0 0 8px #4ade80;
+    animation: blink 2.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
 }
