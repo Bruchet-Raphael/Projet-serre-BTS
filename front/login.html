@@ -1,72 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Serre Connectée — Connexion</title>
-    <link rel="stylesheet" href="login.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - GreenHouse Connect</title>
+    <link rel="stylesheet" href="login.css">
 </head>
+<script>
+// Vérification session active au chargement
+async function checkAuthLogin() {
+    try {
+        const response = await fetch("http://172.29.160.160/api/info", {
+            method: "GET",
+            credentials: "include"
+        });
+
+        // Si déjà authentifié, rediriger vers l'accueil
+        if (response.ok) {
+            window.location.href = "/";
+        }
+        // Sinon, afficher la page de login (action par défaut)
+    } catch (err) {
+        console.error("Erreur checkAuthLogin:", err);
+        // Pas connecté, afficher la page de login
+    }
+}
+checkAuthLogin();
+</script>
 <body>
 
-    <!-- Feuilles de fond (6 divs, formes CSS pures) -->
-    <div class="leaf-1"></div>
-    <div class="leaf-2"></div>
-    <div class="leaf-3"></div>
-    <div class="leaf-4"></div>
-    <div class="leaf-5"></div>
-    <div class="leaf-6"></div>
+<div class="login-container">
+    <h2>GreenHouse Connect</h2>
 
-    <!-- Particules de pollen -->
-    <div class="pollen-field">
-        <div class="p"></div>
-        <div class="p"></div>
-        <div class="p"></div>
-        <div class="p"></div>
-        <div class="p"></div>
-        <div class="p"></div>
-        <div class="p"></div>
-    </div>
+    <div id="errorBox" class="error" style="color:red; margin-bottom:10px;"></div>
+    <div id="successBox" class="success" style="color:green;"></div>
 
-    <!-- Carte de connexion -->
-    <div class="login-container">
+    <label>Login</label>
+    <input type="text" id="email" placeholder="" required>
 
-        <div class="login-header">
-            <div class="icon-leaf"></div>
-            <h2>Serre Vivante</h2>
-            <div class="subtitle">Accès au système · Gestion végétale</div>
-        </div>
+    <label>Mot de passe</label>
+    <input type="password" id="password" placeholder="••••••••" required>
 
-        <div class="separator">
-            <div class="sep-line"></div>
-            <div class="sep-leaf"></div>
-            <div class="sep-line"></div>
-        </div>
+    <button onclick="login()">Se connecter</button>
+    
+    <p style="margin-top:10px;">
+        Pas encore de compte ? <a href="/front/inscription.html">Créer un compte</a>
+    </p>
+</div>
 
-        <div class="error">Identifiants incorrects.</div>
-        <div class="success">Connexion réussie — bienvenue !</div>
-
-        <div class="field">
-            <label for="username">Identifiant</label>
-            <div class="input-wrap">
-                <input id="username" type="text" placeholder="jardinier@serre.io" />
-            </div>
-        </div>
-
-        <div class="field">
-            <label for="password">Mot de passe</label>
-            <div class="input-wrap">
-                <input id="password" type="password" placeholder="············" />
-            </div>
-        </div>
-
-        <button type="button">Entrer dans la serre →</button>
-
-        <div class="login-footer">
-            <div class="status-dot"></div>
-            <span>Écosystème connecté · 8 zones actives</span>
-        </div>
-
-    </div>
+<script src="login.js"></script>
 
 </body>
 </html>
