@@ -1,171 +1,562 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
 
+/* ════════════════════════════════════════════
+   RESET
+════════════════════════════════════════════ */
 *, *::before, *::after {
     box-sizing: border-box;
-}
-
-body {
     margin: 0;
     padding: 0;
-    font-family: "Lora", Georgia, serif;
-    background: #1a1208;
-    height: 100vh;
+}
+
+/* ════════════════════════════════════════════
+   BODY — FOND SOUS-BOIS
+════════════════════════════════════════════ */
+body {
+    min-height: 100vh;
+    font-family: "DM Mono", monospace;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
     position: relative;
+
+    background:
+        radial-gradient(ellipse 80% 55% at 50% 100%, #2b1800 0%, transparent 60%),
+        radial-gradient(ellipse 60% 45% at 0%   85%, #1a2b08 0%, transparent 55%),
+        radial-gradient(ellipse 55% 45% at 100% 80%, #1a2b08 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 50%  0%,  #0c2208 0%, transparent 55%),
+        #111a09;
 }
 
-/* ─── Fond organique — terre, mousse, sous-bois ─── */
+/* ════════════════════════════════════════════
+   RAYONS DE LUMIÈRE (CSS pur)
+════════════════════════════════════════════ */
 body::before {
     content: '';
     position: fixed;
-    inset: 0;
+    top: -80px;
+    left: 50%;
+    width: 600px;
+    height: 700px;
+    transform: translateX(-50%);
     background:
-        radial-gradient(ellipse 90% 50% at 50% 110%, #3d2a0a 0%, transparent 55%),
-        radial-gradient(ellipse 60% 40% at 8%  90%, #2a1f05 0%, transparent 50%),
-        radial-gradient(ellipse 50% 35% at 92% 85%, #2a1f05 0%, transparent 50%),
-        radial-gradient(ellipse 70% 60% at 50% -10%, #0f2a0a 0%, transparent 60%),
-        linear-gradient(180deg, #0d1f07 0%, #1a1208 40%, #1c1005 100%);
+        conic-gradient(from -10deg at 50% 0%,
+            transparent 0deg,
+            rgba(180, 230, 80, 0.04) 4deg,
+            transparent 8deg,
+            transparent 18deg,
+            rgba(180, 230, 80, 0.03) 22deg,
+            transparent 26deg,
+            transparent 40deg,
+            rgba(180, 230, 80, 0.035) 44deg,
+            transparent 48deg,
+            transparent 60deg,
+            rgba(180, 230, 80, 0.025) 64deg,
+            transparent 68deg
+        );
     pointer-events: none;
     z-index: 0;
+    animation: rays-sway 14s ease-in-out infinite;
 }
 
-/* ─── Rayons de lumière filtrée ─── */
-.light-ray {
+@keyframes rays-sway {
+    0%, 100% { transform: translateX(-50%) rotate(0deg); }
+    50%       { transform: translateX(-50%) rotate(4deg); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #1 — Grande feuille BAS GAUCHE
+════════════════════════════════════════════ */
+.leaf-1 {
     position: fixed;
-    top: -20px;
-    width: 180px;
-    height: 420px;
-    background: linear-gradient(180deg, rgba(180, 220, 80, 0.055) 0%, transparent 100%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-}
-.ray-1 { left: 15%; transform: rotate(-18deg); animation: sway-ray 9s ease-in-out infinite; }
-.ray-2 { left: 44%; transform: rotate(5deg);   animation: sway-ray 12s ease-in-out infinite reverse; opacity: 0.7; }
-.ray-3 { right: 10%; transform: rotate(22deg);  animation: sway-ray 10s ease-in-out infinite 2s; opacity: 0.5; }
-
-@keyframes sway-ray {
-    0%, 100% { transform: rotate(var(--rot, 0deg)) scaleX(1); }
-    50%       { transform: rotate(calc(var(--rot, 0deg) + 5deg)) scaleX(1.1); }
+    bottom: -40px;
+    left: -60px;
+    width: 260px;
+    height: 320px;
+    z-index: 1;
+    transform: rotate(20deg);
+    animation: leaf-sway-1 8s ease-in-out infinite;
+    transform-origin: bottom right;
 }
 
-/* ─── Particules de pollen ─── */
-.pollen {
-    position: fixed;
-    border-radius: 50%;
-    background: rgba(200, 220, 100, 0.45);
-    pointer-events: none;
-    z-index: 0;
-    animation: pollen-float linear infinite;
-}
-
-@keyframes pollen-float {
-    0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
-    15%  { opacity: 1; }
-    85%  { opacity: 0.5; }
-    100% { transform: translateY(-380px) translateX(25px) scale(0.35); opacity: 0; }
-}
-
-/* ─── Container principal ─── */
-.login-container {
-    position: relative;
-    z-index: 10;
-    width: 380px;
-    background: rgba(20, 28, 10, 0.82);
-    border: 1px solid rgba(120, 170, 60, 0.22);
-    border-radius: 22px;
-    padding: 0 2.2rem 2.2rem;
-    backdrop-filter: blur(18px) saturate(1.3);
-    -webkit-backdrop-filter: blur(18px) saturate(1.3);
-    box-shadow:
-        0 2px 0 rgba(180, 220, 80, 0.08) inset,
-        0 30px 70px rgba(0, 0, 0, 0.6),
-        0 0 60px rgba(60, 120, 20, 0.07) inset;
-    animation: emerge 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes emerge {
-    from { opacity: 0; transform: translateY(26px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-
-/* ─── Bande de mousse en haut ─── */
-.moss-strip {
-    height: 6px;
-    margin: 0 -2.2rem 1.9rem;
-    border-radius: 22px 22px 0 0;
-    background: linear-gradient(90deg,
-        #2d5a10 0%, #4a8a1c 18%, #7ab82e 36%,
-        #9dd639 50%,
-        #7ab82e 64%, #4a8a1c 82%, #2d5a10 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.moss-strip::after {
+.leaf-1::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(90deg,
-        transparent 0px, transparent 7px,
-        rgba(0,0,0,0.12) 7px, rgba(0,0,0,0.12) 8px);
+    background: linear-gradient(135deg, #2d6b0a 0%, #4a9e18 40%, #3a8012 70%, #1e4d06 100%);
+    clip-path: polygon(
+        50% 0%, 75% 8%, 92% 22%, 100% 42%,
+        96% 62%, 82% 78%, 62% 90%, 50% 100%,
+        38% 90%, 18% 78%, 4% 62%, 0% 42%,
+        8% 22%, 25% 8%
+    );
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5));
 }
 
-/* ─── En-tête ─── */
+.leaf-1::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 49%;
+    width: 2px;
+    height: 88%;
+    background: linear-gradient(180deg, #1e4d06 0%, #4a9e18 50%, #1e4d06 100%);
+    transform: translateX(-50%);
+    border-radius: 2px;
+    opacity: 0.7;
+}
+
+@keyframes leaf-sway-1 {
+    0%, 100% { transform: rotate(20deg) scale(1); }
+    50%       { transform: rotate(16deg) scale(1.02); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #2 — Grande feuille BAS DROITE
+════════════════════════════════════════════ */
+.leaf-2 {
+    position: fixed;
+    bottom: -60px;
+    right: -80px;
+    width: 300px;
+    height: 360px;
+    z-index: 1;
+    transform: rotate(-25deg) scaleX(-1);
+    animation: leaf-sway-2 11s ease-in-out infinite 1s;
+    transform-origin: bottom left;
+}
+
+.leaf-2::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(150deg, #1f5208 0%, #3d8a14 35%, #5aae20 65%, #2d6b0a 100%);
+    clip-path: polygon(
+        50% 0%, 68% 5%, 85% 18%, 94% 34%, 100% 52%,
+        90% 64%, 75% 56%, 80% 72%, 70% 85%, 58% 94%,
+        50% 100%, 42% 94%, 30% 85%, 20% 72%, 25% 56%,
+        10% 64%, 0% 52%, 6% 34%, 15% 18%, 32% 5%
+    );
+    filter: drop-shadow(-8px 12px 24px rgba(0,0,0,0.55));
+    opacity: 0.88;
+}
+
+.leaf-2::after {
+    content: '';
+    position: absolute;
+    top: 2%;
+    left: 49%;
+    width: 2px;
+    height: 94%;
+    background: rgba(18, 55, 5, 0.65);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@keyframes leaf-sway-2 {
+    0%, 100% { transform: rotate(-25deg) scaleX(-1) scale(1); }
+    50%       { transform: rotate(-20deg) scaleX(-1) scale(1.02); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #3 — Feuille elliptique HAUT GAUCHE
+════════════════════════════════════════════ */
+.leaf-3 {
+    position: fixed;
+    top: -20px;
+    left: 40px;
+    width: 160px;
+    height: 200px;
+    z-index: 1;
+    transform: rotate(55deg);
+    animation: leaf-sway-3 9s ease-in-out infinite 0.5s;
+    transform-origin: bottom center;
+    opacity: 0.75;
+}
+
+.leaf-3::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, #3a7a10 0%, #60b028 50%, #3a7a10 100%);
+    clip-path: polygon(
+        50% 0%, 78% 10%, 96% 30%, 100% 50%,
+        96% 70%, 78% 90%, 50% 100%,
+        22% 90%, 4% 70%, 0% 50%,
+        4% 30%, 22% 10%
+    );
+    filter: drop-shadow(4px 6px 12px rgba(0,0,0,0.4));
+}
+
+.leaf-3::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    width: 2px;
+    height: 88%;
+    background: rgba(18, 55, 5, 0.65);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@keyframes leaf-sway-3 {
+    0%, 100% { transform: rotate(55deg); }
+    50%       { transform: rotate(50deg) translateX(-4px); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #4 — Longue feuille HAUT DROITE
+════════════════════════════════════════════ */
+.leaf-4 {
+    position: fixed;
+    top: -30px;
+    right: 20px;
+    width: 140px;
+    height: 260px;
+    z-index: 1;
+    transform: rotate(-50deg) scaleX(-1);
+    animation: leaf-sway-4 13s ease-in-out infinite 2s;
+    transform-origin: bottom center;
+    opacity: 0.7;
+}
+
+.leaf-4::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #2d6b0a 0%, #50a020 45%, #2d6b0a 100%);
+    clip-path: polygon(
+        50% 0%, 72% 15%, 88% 38%, 90% 62%,
+        78% 82%, 60% 96%, 50% 100%,
+        40% 96%, 22% 82%, 10% 62%,
+        12% 38%, 28% 15%
+    );
+    filter: drop-shadow(-4px 8px 16px rgba(0,0,0,0.45));
+}
+
+.leaf-4::after {
+    content: '';
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    width: 2px;
+    height: 94%;
+    background: rgba(15, 50, 4, 0.65);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@keyframes leaf-sway-4 {
+    0%, 100% { transform: rotate(-50deg) scaleX(-1); }
+    50%       { transform: rotate(-45deg) scaleX(-1) translateX(3px); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #5 — Feuille MILIEU GAUCHE
+════════════════════════════════════════════ */
+.leaf-5 {
+    position: fixed;
+    left: -10px;
+    top: 35%;
+    width: 120px;
+    height: 160px;
+    z-index: 1;
+    transform: rotate(35deg);
+    animation: leaf-sway-5 10s ease-in-out infinite 3s;
+    transform-origin: bottom center;
+    opacity: 0.65;
+}
+
+.leaf-5::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, #3a8012 0%, #68c030 55%, #2d6b0a 100%);
+    clip-path: polygon(
+        50% 0%, 78% 18%, 95% 44%,
+        88% 70%, 68% 88%, 50% 100%,
+        32% 88%, 12% 70%, 5% 44%, 22% 18%
+    );
+    filter: drop-shadow(3px 5px 10px rgba(0,0,0,0.4));
+}
+
+.leaf-5::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    width: 2px;
+    height: 88%;
+    background: rgba(18, 55, 5, 0.6);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@keyframes leaf-sway-5 {
+    0%, 100% { transform: rotate(35deg); }
+    50%       { transform: rotate(30deg) translateY(-5px); }
+}
+
+/* ════════════════════════════════════════════
+   FEUILLE #6 — MILIEU DROITE
+════════════════════════════════════════════ */
+.leaf-6 {
+    position: fixed;
+    right: -15px;
+    top: 30%;
+    width: 130px;
+    height: 175px;
+    z-index: 1;
+    transform: rotate(-40deg) scaleX(-1);
+    animation: leaf-sway-5 12s ease-in-out infinite 1.5s;
+    transform-origin: bottom center;
+    opacity: 0.6;
+}
+
+.leaf-6::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(140deg, #264f08 0%, #4a9010 45%, #264f08 100%);
+    clip-path: polygon(
+        50% 0%, 78% 18%, 95% 44%,
+        88% 70%, 68% 88%, 50% 100%,
+        32% 88%, 12% 70%, 5% 44%, 22% 18%
+    );
+    filter: drop-shadow(-3px 6px 12px rgba(0,0,0,0.4));
+}
+
+.leaf-6::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    width: 2px;
+    height: 88%;
+    background: rgba(14, 44, 4, 0.6);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+/* ════════════════════════════════════════════
+   POLLEN / PARTICULES FLOTTANTES
+════════════════════════════════════════════ */
+.pollen-field {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.p {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(200, 230, 90, 0.55);
+    animation: pollen-rise linear infinite;
+}
+
+.p:nth-child(1) { width: 3px; height: 3px; left: 18%; bottom: 10%; animation-duration: 7s;  animation-delay: 0s; }
+.p:nth-child(2) { width: 2px; height: 2px; left: 33%; bottom: 20%; animation-duration: 9s;  animation-delay: 1.2s; }
+.p:nth-child(3) { width: 3px; height: 3px; left: 52%; bottom: 5%;  animation-duration: 8s;  animation-delay: 2.8s; }
+.p:nth-child(4) { width: 2px; height: 2px; left: 68%; bottom: 15%; animation-duration: 11s; animation-delay: 0.5s; }
+.p:nth-child(5) { width: 3px; height: 3px; left: 80%; bottom: 8%;  animation-duration: 6s;  animation-delay: 3.5s; }
+.p:nth-child(6) { width: 2px; height: 2px; left: 44%; bottom: 25%; animation-duration: 10s; animation-delay: 5s; }
+.p:nth-child(7) { width: 2px; height: 2px; left: 25%; bottom: 30%; animation-duration: 13s; animation-delay: 1.8s; }
+
+@keyframes pollen-rise {
+    0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateY(-90vh) translateX(20px) scale(0.3); opacity: 0; }
+}
+
+/* ════════════════════════════════════════════
+   CARTE DE CONNEXION
+════════════════════════════════════════════ */
+.login-container {
+    position: relative;
+    z-index: 10;
+    width: 390px;
+    padding: 0 2.2rem 2.2rem;
+    border-radius: 24px;
+
+    background:
+        linear-gradient(170deg, rgba(30, 50, 12, 0.92) 0%, rgba(15, 28, 6, 0.96) 100%);
+    border: 1px solid rgba(110, 170, 45, 0.2);
+    box-shadow:
+        0 0 0 1px rgba(80, 150, 20, 0.06),
+        0 32px 80px rgba(0, 0, 0, 0.65),
+        0 0 80px rgba(50, 110, 10, 0.08) inset;
+
+    animation: card-bloom 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes card-bloom {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.96);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* ─── Bande texturée — écorce / mousse ─── */
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    border-radius: 24px 24px 0 0;
+    background:
+        repeating-linear-gradient(90deg,
+            #2d6b0a 0px, #4a9e18 8px, #6dc030 16px,
+            #4a9e18 24px, #2d6b0a 32px, #1e4d06 40px,
+            #4a9e18 48px, #7ad038 56px, #4a9e18 64px,
+            #1e4d06 72px
+        );
+    opacity: 0.9;
+}
+
+/* ─── Lueur en bas de carte ─── */
+.login-container::after {
+    content: '';
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 30px;
+    background: radial-gradient(ellipse, rgba(80, 180, 20, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: ground-glow 4s ease-in-out infinite;
+}
+
+@keyframes ground-glow {
+    0%, 100% { opacity: 0.7; width: 220px; }
+    50%       { opacity: 1;   width: 270px; }
+}
+
+/* ════════════════════════════════════════════
+   EN-TÊTE
+════════════════════════════════════════════ */
 .login-header {
     text-align: center;
-    margin-bottom: 1.6rem;
+    padding-top: 2.2rem;
+    margin-bottom: 1.8rem;
 }
 
-.login-header .leaf-icon {
+/* Icône feuille 100% CSS */
+.icon-leaf {
     display: inline-block;
-    width: 54px;
-    height: 54px;
-    margin-bottom: 0.85rem;
+    width: 56px;
+    height: 56px;
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.icon-leaf::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    width: 40px;
+    height: 48px;
+    background: linear-gradient(135deg, #3d8a14 0%, #6dc030 50%, #3d8a14 100%);
+    clip-path: polygon(
+        50% 0%, 80% 12%, 96% 36%, 92% 62%,
+        74% 82%, 50% 100%, 26% 82%, 8% 62%,
+        4% 36%, 20% 12%
+    );
+    animation: icon-pulse 3s ease-in-out infinite;
+}
+
+.icon-leaf::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    width: 2px;
+    height: 40px;
+    background: rgba(18, 55, 6, 0.8);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@keyframes icon-pulse {
+    0%, 100% { filter: brightness(1)   drop-shadow(0 0 6px  rgba(90, 200, 20, 0.3)); }
+    50%       { filter: brightness(1.2) drop-shadow(0 0 14px rgba(90, 200, 20, 0.6)); }
 }
 
 h2 {
-    font-family: "Lora", serif;
-    font-size: 1.3rem;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.4rem;
     font-weight: 600;
-    color: #c8e87a;
-    letter-spacing: 0.02em;
+    color: #c5e870;
+    letter-spacing: 0.03em;
     line-height: 1.2;
-    margin: 0 0 0.3rem;
+    margin-bottom: 0.3rem;
 }
 
 .login-header .subtitle {
     font-family: "DM Mono", monospace;
-    font-size: 0.68rem;
-    font-weight: 400;
-    color: rgba(140, 190, 70, 0.42);
-    letter-spacing: 0.1em;
+    font-size: 0.67rem;
+    color: rgba(140, 190, 55, 0.4);
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
-/* ─── Séparateur décoratif ─── */
-.divider {
+/* ─── Séparateur botanique ─── */
+.separator {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 0 0 1.5rem;
+    gap: 8px;
+    margin: 0 0 1.6rem;
 }
 
-.divider-line {
+.sep-line {
     flex: 1;
     height: 1px;
-    background: rgba(100, 160, 40, 0.18);
+    background: linear-gradient(90deg, transparent, rgba(100, 160, 40, 0.3), transparent);
 }
 
-.divider-mark {
-    font-size: 10px;
-    color: rgba(140, 190, 70, 0.35);
+/* Petite feuille décorative CSS au centre du séparateur */
+.sep-leaf {
+    width: 12px;
+    height: 16px;
+    position: relative;
+    flex-shrink: 0;
 }
 
-/* ─── Labels ─── */
+.sep-leaf::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(100, 160, 40, 0.45);
+    clip-path: polygon(50% 0%, 90% 30%, 90% 70%, 50% 100%, 10% 70%, 10% 30%);
+}
+
+.sep-leaf::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    width: 1.5px;
+    height: 88%;
+    background: rgba(40, 90, 10, 0.7);
+    transform: translateX(-50%);
+}
+
+/* ════════════════════════════════════════════
+   LABELS
+════════════════════════════════════════════ */
 label {
     display: block;
     font-family: "DM Mono", monospace;
@@ -173,152 +564,206 @@ label {
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(140, 185, 60, 0.52);
-    margin-bottom: 0.45rem;
+    color: rgba(135, 185, 50, 0.55);
+    margin-bottom: 0.5rem;
 }
 
-/* ─── Champs de saisie ─── */
-.input-row {
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(100, 160, 40, 0.16);
-    border-radius: 11px;
-    margin-bottom: 1.15rem;
-    overflow: hidden;
-    transition: border-color 0.25s, background 0.25s;
+/* ════════════════════════════════════════════
+   CHAMPS DE SAISIE
+════════════════════════════════════════════ */
+.field {
+    margin-bottom: 1.2rem;
 }
 
-.input-row:focus-within {
-    border-color: rgba(140, 200, 60, 0.45);
-    background: rgba(100, 170, 30, 0.07);
+.input-wrap {
+    position: relative;
 }
 
-.input-row .input-icon {
-    width: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    opacity: 0.55;
-    transition: opacity 0.2s;
+/* Petite feuille indicateur à gauche du champ */
+.input-wrap::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 10px;
+    height: 14px;
+    transform: translateY(-50%);
+    background: rgba(100, 160, 40, 0.35);
+    clip-path: polygon(50% 0%, 90% 25%, 90% 75%, 50% 100%, 10% 75%, 10% 25%);
+    transition: background 0.25s;
+    z-index: 1;
 }
 
-.input-row:focus-within .input-icon {
-    opacity: 1;
+.input-wrap:focus-within::before {
+    background: rgba(140, 210, 55, 0.75);
 }
 
 input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    padding: 0.82rem 0.9rem 0.82rem 0;
-    color: #d8eeaa;
-    font-family: "DM Mono", monospace;
-    font-size: 0.88rem;
     width: 100%;
+    padding: 0.85rem 1rem 0.85rem 2.6rem;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(90, 150, 30, 0.18);
+    border-radius: 12px;
+    color: #d5ec9a;
+    font-family: "DM Mono", monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
 }
 
 input::placeholder {
-    color: rgba(180, 210, 90, 0.2);
+    color: rgba(180, 215, 70, 0.18);
 }
 
-/* ─── Bouton — bois gravé ─── */
+input:focus {
+    border-color: rgba(130, 200, 50, 0.45);
+    background: rgba(80, 150, 20, 0.07);
+    box-shadow: 0 0 0 3px rgba(90, 170, 25, 0.1);
+}
+
+/* ════════════════════════════════════════════
+   BOUTON PRINCIPAL
+════════════════════════════════════════════ */
 button {
     width: 100%;
-    padding: 0.92rem;
-    background:
-        repeating-linear-gradient(92deg,
-            rgba(255, 255, 255, 0.018) 0px,
-            rgba(255, 255, 255, 0.018) 1px,
-            transparent 1px,
-            transparent 18px),
-        linear-gradient(135deg, #3a6b12 0%, #2d5a0e 40%, #4a8a1c 100%);
-    border: 1px solid rgba(120, 190, 50, 0.35);
-    border-radius: 11px;
-    color: #d8eeaa;
-    font-family: "Lora", serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-style: italic;
-    letter-spacing: 0.04em;
-    cursor: pointer;
+    padding: 1rem 1.5rem;
     margin-top: 0.4rem;
-    transition: filter 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+
+    background:
+        repeating-linear-gradient(88deg,
+            rgba(255, 255, 255, 0.015) 0px,
+            rgba(255, 255, 255, 0.015) 1px,
+            transparent 1px,
+            transparent 20px),
+        linear-gradient(140deg, #2d6b0a 0%, #1e4d06 35%, #3d8a14 65%, #2d6b0a 100%);
+
+    border: 1px solid rgba(110, 185, 45, 0.4);
+    border-radius: 12px;
+    color: #d5ec9a;
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    transition: transform 0.18s, box-shadow 0.25s, filter 0.2s;
     box-shadow:
-        0 4px 22px rgba(50, 120, 10, 0.25),
-        0 1px 0 rgba(200, 240, 100, 0.1) inset;
+        0 5px 24px rgba(40, 110, 10, 0.3),
+        0 1px 0 rgba(180, 240, 80, 0.1) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+}
+
+/* Feuilles décoratives aux coins du bouton */
+button::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 8px;
+    width: 10px;
+    height: 13px;
+    background: rgba(150, 220, 60, 0.25);
+    clip-path: polygon(50% 0%, 90% 25%, 90% 75%, 50% 100%, 10% 75%, 10% 25%);
+    transform: rotate(-30deg);
+    transition: background 0.2s;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    width: 10px;
+    height: 13px;
+    background: rgba(150, 220, 60, 0.25);
+    clip-path: polygon(50% 0%, 90% 25%, 90% 75%, 50% 100%, 10% 75%, 10% 25%);
+    transform: rotate(30deg);
+    transition: background 0.2s;
 }
 
 button:hover {
-    filter: brightness(1.12);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    filter: brightness(1.15);
+    box-shadow:
+        0 8px 32px rgba(50, 140, 15, 0.4),
+        0 1px 0 rgba(200, 255, 90, 0.12) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+}
+
+button:hover::before,
+button:hover::after {
+    background: rgba(180, 250, 80, 0.5);
 }
 
 button:active {
     transform: translateY(0);
-    filter: brightness(0.95);
+    filter: brightness(0.92);
 }
 
-/* ─── Messages d'état ─── */
+/* ════════════════════════════════════════════
+   MESSAGES ERREUR / SUCCÈS
+════════════════════════════════════════════ */
 .error,
 .success {
-    padding: 0.75rem 1rem;
-    border-radius: 9px;
-    font-family: "DM Mono", monospace;
-    font-size: 0.78rem;
-    margin-bottom: 1.1rem;
     display: none;
-    animation: slideIn 0.3s ease;
+    padding: 0.78rem 1rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    margin-bottom: 1.2rem;
+    animation: msg-in 0.3s ease;
 }
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(-5px); }
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 .error {
-    background: rgba(180, 60, 20, 0.14);
-    border: 1px solid rgba(200, 80, 40, 0.25);
-    color: #f4a07a;
+    background: rgba(160, 50, 10, 0.16);
+    border: 1px solid rgba(200, 80, 30, 0.28);
+    color: #f2a07a;
 }
 
 .success {
-    background: rgba(60, 140, 30, 0.12);
-    border: 1px solid rgba(80, 160, 40, 0.22);
-    color: #a0d870;
+    background: rgba(50, 130, 15, 0.14);
+    border: 1px solid rgba(90, 170, 35, 0.28);
+    color: #a8df6a;
 }
 
-/* ─── Pied de carte ─── */
+/* ════════════════════════════════════════════
+   PIED DE CARTE
+════════════════════════════════════════════ */
 .login-footer {
-    margin-top: 1.5rem;
+    margin-top: 1.6rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
 
-.pulse-ring {
+.status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #6dbd2a;
-    box-shadow: 0 0 0 0 rgba(109, 189, 42, 0.6);
+    background: #72cc28;
     flex-shrink: 0;
-    animation: pulse 2.8s ease-out infinite;
+    animation: heartbeat 2.4s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(114, 204, 40, 0.5);
 }
 
-@keyframes pulse {
-    0%   { box-shadow: 0 0 0 0   rgba(109, 189, 42, 0.6); }
-    70%  { box-shadow: 0 0 0 7px rgba(109, 189, 42, 0); }
-    100% { box-shadow: 0 0 0 0   rgba(109, 189, 42, 0); }
+@keyframes heartbeat {
+    0%   { transform: scale(1);   box-shadow: 0 0 0 0   rgba(114, 204, 40, 0.5); }
+    30%  { transform: scale(1.2); box-shadow: 0 0 0 5px rgba(114, 204, 40, 0); }
+    60%  { transform: scale(1);   box-shadow: 0 0 0 0   rgba(114, 204, 40, 0); }
+    80%  { transform: scale(1.1); box-shadow: 0 0 0 3px rgba(114, 204, 40, 0); }
+    100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(114, 204, 40, 0); }
 }
 
 .login-footer span {
     font-family: "DM Mono", monospace;
-    font-size: 0.65rem;
-    color: rgba(120, 170, 50, 0.3);
-    letter-spacing: 0.07em;
+    font-size: 0.64rem;
+    color: rgba(120, 170, 45, 0.3);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
