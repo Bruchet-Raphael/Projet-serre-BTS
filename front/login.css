@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -7,8 +7,8 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: "Outfit", sans-serif;
-    background-color: #0a1a0d;
+    font-family: "Lora", Georgia, serif;
+    background: #1a1208;
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -17,343 +17,308 @@ body {
     position: relative;
 }
 
-/* ─── Background ambiance ─── */
+/* ─── Fond organique — terre, mousse, sous-bois ─── */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(34, 197, 94, 0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(16, 185, 129, 0.10) 0%, transparent 55%),
-        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6, 95, 70, 0.08) 0%, transparent 70%);
+        radial-gradient(ellipse 90% 50% at 50% 110%, #3d2a0a 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 8%  90%, #2a1f05 0%, transparent 50%),
+        radial-gradient(ellipse 50% 35% at 92% 85%, #2a1f05 0%, transparent 50%),
+        radial-gradient(ellipse 70% 60% at 50% -10%, #0f2a0a 0%, transparent 60%),
+        linear-gradient(180deg, #0d1f07 0%, #1a1208 40%, #1c1005 100%);
     pointer-events: none;
     z-index: 0;
 }
 
-/* Floating botanical blobs */
-body::after {
-    content: '';
+/* ─── Rayons de lumière filtrée ─── */
+.light-ray {
     position: fixed;
-    inset: 0;
-    background-image:
-        radial-gradient(circle 2px at 15% 25%, rgba(74, 222, 128, 0.4) 0%, transparent 100%),
-        radial-gradient(circle 1px at 75% 60%, rgba(52, 211, 153, 0.3) 0%, transparent 100%),
-        radial-gradient(circle 2px at 40% 80%, rgba(74, 222, 128, 0.25) 0%, transparent 100%),
-        radial-gradient(circle 1px at 90% 30%, rgba(110, 231, 183, 0.35) 0%, transparent 100%),
-        radial-gradient(circle 1px at 25% 65%, rgba(52, 211, 153, 0.2) 0%, transparent 100%);
+    top: -20px;
+    width: 180px;
+    height: 420px;
+    background: linear-gradient(180deg, rgba(180, 220, 80, 0.055) 0%, transparent 100%);
+    border-radius: 50%;
     pointer-events: none;
     z-index: 0;
 }
+.ray-1 { left: 15%; transform: rotate(-18deg); animation: sway-ray 9s ease-in-out infinite; }
+.ray-2 { left: 44%; transform: rotate(5deg);   animation: sway-ray 12s ease-in-out infinite reverse; opacity: 0.7; }
+.ray-3 { right: 10%; transform: rotate(22deg);  animation: sway-ray 10s ease-in-out infinite 2s; opacity: 0.5; }
 
-/* ─── Animated grid lines (greenhouse glass effect) ─── */
-.greenhouse-grid {
+@keyframes sway-ray {
+    0%, 100% { transform: rotate(var(--rot, 0deg)) scaleX(1); }
+    50%       { transform: rotate(calc(var(--rot, 0deg) + 5deg)) scaleX(1.1); }
+}
+
+/* ─── Particules de pollen ─── */
+.pollen {
     position: fixed;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(74, 222, 128, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(74, 222, 128, 0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
+    border-radius: 50%;
+    background: rgba(200, 220, 100, 0.45);
     pointer-events: none;
     z-index: 0;
+    animation: pollen-float linear infinite;
 }
 
-/* ─── Main container ─── */
+@keyframes pollen-float {
+    0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 0.5; }
+    100% { transform: translateY(-380px) translateX(25px) scale(0.35); opacity: 0; }
+}
+
+/* ─── Container principal ─── */
 .login-container {
     position: relative;
-    z-index: 1;
-    background: rgba(10, 26, 13, 0.75);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    padding: 2.8rem 2.4rem 2.4rem;
-    border-radius: 20px;
+    z-index: 10;
     width: 380px;
-    border: 1px solid rgba(74, 222, 128, 0.18);
+    background: rgba(20, 28, 10, 0.82);
+    border: 1px solid rgba(120, 170, 60, 0.22);
+    border-radius: 22px;
+    padding: 0 2.2rem 2.2rem;
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
     box-shadow:
-        0 0 0 1px rgba(74, 222, 128, 0.06),
-        0 24px 60px rgba(0, 0, 0, 0.55),
-        0 0 80px rgba(34, 197, 94, 0.06) inset;
-    animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+        0 2px 0 rgba(180, 220, 80, 0.08) inset,
+        0 30px 70px rgba(0, 0, 0, 0.6),
+        0 0 60px rgba(60, 120, 20, 0.07) inset;
+    animation: emerge 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Corner accent lines */
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: 20px;
-    right: 20px;
-    height: 2px;
+@keyframes emerge {
+    from { opacity: 0; transform: translateY(26px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ─── Bande de mousse en haut ─── */
+.moss-strip {
+    height: 6px;
+    margin: 0 -2.2rem 1.9rem;
+    border-radius: 22px 22px 0 0;
     background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(74, 222, 128, 0.6) 30%,
-        rgba(52, 211, 153, 0.8) 50%,
-        rgba(74, 222, 128, 0.6) 70%,
-        transparent 100%);
-    border-radius: 0 0 2px 2px;
+        #2d5a10 0%, #4a8a1c 18%, #7ab82e 36%,
+        #9dd639 50%,
+        #7ab82e 64%, #4a8a1c 82%, #2d5a10 100%);
+    position: relative;
+    overflow: hidden;
 }
 
-/* Bottom glow pulse */
-.login-container::after {
+.moss-strip::after {
     content: '';
     position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 40px;
-    background: radial-gradient(ellipse, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
-    border-radius: 50%;
-    animation: breathe 4s ease-in-out infinite;
-    pointer-events: none;
+    inset: 0;
+    background: repeating-linear-gradient(90deg,
+        transparent 0px, transparent 7px,
+        rgba(0,0,0,0.12) 7px, rgba(0,0,0,0.12) 8px);
 }
 
-@keyframes rise {
-    from {
-        opacity: 0;
-        transform: translateY(28px) scale(0.97);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-@keyframes breathe {
-    0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
-    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.15); }
-}
-
-/* ─── Header ─── */
+/* ─── En-tête ─── */
 .login-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem;
 }
 
-.login-header .icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.login-header .leaf-icon {
+    display: inline-block;
     width: 54px;
     height: 54px;
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.10));
-    border: 1px solid rgba(74, 222, 128, 0.3);
-    border-radius: 14px;
-    margin-bottom: 1rem;
-    font-size: 1.6rem;
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.12);
-    animation: iconGlow 3s ease-in-out infinite;
-}
-
-@keyframes iconGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.12); }
-    50%       { box-shadow: 0 0 30px rgba(34, 197, 94, 0.25); }
+    margin-bottom: 0.85rem;
 }
 
 h2 {
-    font-family: "Space Mono", monospace;
-    font-size: 1.15rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #86efac;
-    margin: 0 0 0.3rem 0;
+    font-family: "Lora", serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #c8e87a;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    margin: 0 0 0.3rem;
 }
 
 .login-header .subtitle {
-    font-size: 0.78rem;
-    color: rgba(134, 239, 172, 0.45);
-    letter-spacing: 0.08em;
-    font-family: "Space Mono", monospace;
+    font-family: "DM Mono", monospace;
+    font-size: 0.68rem;
     font-weight: 400;
-}
-
-/* ─── Form group ─── */
-.form-group {
-    margin-bottom: 1.2rem;
-    position: relative;
-}
-
-label {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
+    color: rgba(140, 190, 70, 0.42);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(134, 239, 172, 0.6);
-    margin-bottom: 0.5rem;
-    font-family: "Space Mono", monospace;
 }
 
-.input-wrapper {
-    position: relative;
+/* ─── Séparateur décoratif ─── */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 1.5rem;
 }
 
-.input-wrapper .input-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.95rem;
-    opacity: 0.45;
-    pointer-events: none;
+.divider-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(100, 160, 40, 0.18);
+}
+
+.divider-mark {
+    font-size: 10px;
+    color: rgba(140, 190, 70, 0.35);
+}
+
+/* ─── Labels ─── */
+label {
+    display: block;
+    font-family: "DM Mono", monospace;
+    font-size: 0.67rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(140, 185, 60, 0.52);
+    margin-bottom: 0.45rem;
+}
+
+/* ─── Champs de saisie ─── */
+.input-row {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(100, 160, 40, 0.16);
+    border-radius: 11px;
+    margin-bottom: 1.15rem;
+    overflow: hidden;
+    transition: border-color 0.25s, background 0.25s;
+}
+
+.input-row:focus-within {
+    border-color: rgba(140, 200, 60, 0.45);
+    background: rgba(100, 170, 30, 0.07);
+}
+
+.input-row .input-icon {
+    width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.55;
     transition: opacity 0.2s;
 }
 
+.input-row:focus-within .input-icon {
+    opacity: 1;
+}
+
 input {
-    width: 100%;
-    padding: 0.85rem 1rem 0.85rem 2.7rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(74, 222, 128, 0.14);
-    border-radius: 10px;
-    color: #d1fae5;
-    font-family: "Outfit", sans-serif;
-    font-size: 0.95rem;
-    font-weight: 400;
+    flex: 1;
+    background: transparent;
+    border: none;
     outline: none;
-    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
-    margin: 0;
+    padding: 0.82rem 0.9rem 0.82rem 0;
+    color: #d8eeaa;
+    font-family: "DM Mono", monospace;
+    font-size: 0.88rem;
+    width: 100%;
 }
 
 input::placeholder {
-    color: rgba(209, 250, 229, 0.2);
-    font-size: 0.9rem;
+    color: rgba(180, 210, 90, 0.2);
 }
 
-input:focus {
-    background: rgba(34, 197, 94, 0.06);
-    border-color: rgba(74, 222, 128, 0.5);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.08), 0 0 16px rgba(34, 197, 94, 0.06);
-}
-
-input:focus + .focus-line,
-input:focus ~ .focus-line {
-    transform: scaleX(1);
-}
-
-input:focus ~ .input-icon,
-.input-wrapper:focus-within .input-icon {
-    opacity: 0.9;
-}
-
-/* ─── Button ─── */
+/* ─── Bouton — bois gravé ─── */
 button {
     width: 100%;
-    padding: 0.95rem;
-    background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    font-family: "Space Mono", monospace;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    padding: 0.92rem;
+    background:
+        repeating-linear-gradient(92deg,
+            rgba(255, 255, 255, 0.018) 0px,
+            rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px,
+            transparent 18px),
+        linear-gradient(135deg, #3a6b12 0%, #2d5a0e 40%, #4a8a1c 100%);
+    border: 1px solid rgba(120, 190, 50, 0.35);
+    border-radius: 11px;
+    color: #d8eeaa;
+    font-family: "Lora", serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.04em;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
-    position: relative;
-    overflow: hidden;
-    margin-top: 0.5rem;
-    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.3);
-}
-
-button::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 50%);
-    border-radius: inherit;
-}
-
-button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
-    opacity: 0;
+    margin-top: 0.4rem;
+    transition: filter 0.2s, transform 0.15s;
+    box-shadow:
+        0 4px 22px rgba(50, 120, 10, 0.25),
+        0 1px 0 rgba(200, 240, 100, 0.1) inset;
 }
 
 button:hover {
-    background: linear-gradient(135deg, #15803d 0%, #047857 100%);
-    box-shadow: 0 6px 28px rgba(22, 163, 74, 0.45);
+    filter: brightness(1.12);
     transform: translateY(-1px);
 }
 
 button:active {
-    transform: translateY(0px);
+    transform: translateY(0);
+    filter: brightness(0.95);
 }
 
-button:active::after {
-    width: 300px;
-    height: 300px;
-    opacity: 0;
-    transition: 0s;
-}
-
-/* ─── Status messages ─── */
+/* ─── Messages d'état ─── */
 .error,
 .success {
-    padding: 0.8rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 9px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    margin-bottom: 1.2rem;
+    font-family: "DM Mono", monospace;
+    font-size: 0.78rem;
+    margin-bottom: 1.1rem;
     display: none;
-    align-items: center;
-    gap: 0.5rem;
-    letter-spacing: 0.01em;
-    animation: slideDown 0.3s ease;
+    animation: slideIn 0.3s ease;
 }
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-5px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 .error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    color: #fca5a5;
+    background: rgba(180, 60, 20, 0.14);
+    border: 1px solid rgba(200, 80, 40, 0.25);
+    color: #f4a07a;
 }
 
 .success {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.25);
-    color: #86efac;
+    background: rgba(60, 140, 30, 0.12);
+    border: 1px solid rgba(80, 160, 40, 0.22);
+    color: #a0d870;
 }
 
-/* ─── Divider / footer ─── */
+/* ─── Pied de carte ─── */
 .login-footer {
-    margin-top: 1.6rem;
-    text-align: center;
-    font-size: 0.72rem;
-    color: rgba(134, 239, 172, 0.25);
-    font-family: "Space Mono", monospace;
-    letter-spacing: 0.05em;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.pulse-ring {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6dbd2a;
+    box-shadow: 0 0 0 0 rgba(109, 189, 42, 0.6);
+    flex-shrink: 0;
+    animation: pulse 2.8s ease-out infinite;
+}
+
+@keyframes pulse {
+    0%   { box-shadow: 0 0 0 0   rgba(109, 189, 42, 0.6); }
+    70%  { box-shadow: 0 0 0 7px rgba(109, 189, 42, 0); }
+    100% { box-shadow: 0 0 0 0   rgba(109, 189, 42, 0); }
 }
 
 .login-footer span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #4ade80;
-    display: inline-block;
-    box-shadow: 0 0 8px #4ade80;
-    animation: blink 2.5s ease-in-out infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
+    font-family: "DM Mono", monospace;
+    font-size: 0.65rem;
+    color: rgba(120, 170, 50, 0.3);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
 }
