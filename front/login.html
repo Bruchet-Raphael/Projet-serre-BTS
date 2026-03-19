@@ -29,24 +29,67 @@ checkAuthLogin();
 </script>
 <body>
 
-<div class="login-container">
-    <h2>GreenHouse Connect</h2>
+    <!-- Feuilles de fond (CSS clip-path) -->
+    <div class="leaf-1"></div>
+    <div class="leaf-2"></div>
+    <div class="leaf-3"></div>
+    <div class="leaf-4"></div>
+    <div class="leaf-5"></div>
+    <div class="leaf-6"></div>
 
-    <div id="errorBox" class="error" style="color:red; margin-bottom:10px;"></div>
-    <div id="successBox" class="success" style="color:green;"></div>
+    <!-- Particules de pollen -->
+    <div class="pollen-field">
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+        <div class="p"></div>
+    </div>
 
-    <label>Login</label>
-    <input type="text" id="email" placeholder="" required>
+    <!-- Carte de connexion -->
+    <div class="login-container">
 
-    <label>Mot de passe</label>
-    <input type="password" id="password" placeholder="••••••••" required>
+        <div class="login-header">
+            <div class="icon-leaf"></div>
+            <h2>GreenHouse Connect</h2>
+            <div class="subtitle">Accès au système · Gestion végétale</div>
+        </div>
 
-    <button onclick="login()">Se connecter</button>
-    
-    <p style="margin-top:10px;">
-        Pas encore de compte ? <a href="/front/inscription.html">Créer un compte</a>
-    </p>
-</div>
+        <div class="separator">
+            <div class="sep-line"></div>
+            <div class="sep-leaf"></div>
+            <div class="sep-line"></div>
+        </div>
+
+        <div id="errorBox"   class="error"></div>
+        <div id="successBox" class="success"></div>
+
+        <div class="field">
+            <label for="email">Login</label>
+            <div class="input-wrap">
+                <input type="text" id="email" placeholder="" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="password">Mot de passe</label>
+            <div class="input-wrap">
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+        </div>
+
+        <button onclick="login()">Se connecter</button>
+
+        <div class="login-footer">
+            <div class="status-dot"></div>
+            <span>Écosystème connecté · Serre active</span>
+        </div>
+
+        <p>Pas encore de compte ? <a href="/front/inscription.html">Créer un compte</a></p>
+
+    </div>
 
 <script src="login.js"></script>
 
