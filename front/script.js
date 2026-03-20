@@ -793,7 +793,7 @@ function initializeCharts() {
                             text: 'Température (°C)',
                             font: { size: 13, weight: 'bold' }
                         },
-                        min: -100,
+                        min: -80,
                         max: 100,
                         ticks: {
                             stepSize: 20,

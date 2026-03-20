@@ -758,10 +758,17 @@ body {
 .chart-container-large {
     width: 100%;
     position: relative;
-    background: white;
+    background: linear-gradient(135deg, #F1F8F6 0%, #E8F5E9 100%);
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #4CAF50;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.chart-container-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.2);
 }
 
 .chart-wrapper {
