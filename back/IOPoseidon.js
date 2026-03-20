@@ -1,13 +1,13 @@
 const net = require('net');
 const Modbus = require('jsmodbus');
 
-// --- CONSTANTES DE MAPPING ---
+// --- CONSTANTES DE MAPPING (POUR LE VRAI POSEIDON) ---
 const MAPPING = {
     TEMP_EXT: 5,        // Registre Holding 5 (Température Extérieure pour le Gel)
-    NIVEAU_CUVE: 100,   // Input 100
+    NIVEAU_CUVE: 0,     // Discrete Input 0 (DI 1 sur la vraie carte)
     COMPTEUR: 1,        // Registre Holding 1 (Débitmètre)
-    POMPE: 151,         // Coil 151
-    VANNE: 152          // Coil 152
+    VANNE: 151,         // Coil 151 (Electro Vanne)
+    POMPE: 152          // Coil 152 (Pompe)
 };
 
 const LITRES_PAR_IMPULSION = 1.0; 
@@ -17,6 +17,7 @@ class IOPoseidon {
         this.ip = ip;
         this.port = port;
         this.socket = new net.Socket();
+        // Le vrai Poseidon utilise généralement l'ID 1 ou 2 (on laisse 1 par défaut)
         this.client = new Modbus.client.TCP(this.socket, 1);
         
         this.data = {
@@ -60,10 +61,15 @@ class IOPoseidon {
             
             // On extrait les bonnes cases du tableau
             this.data.impulsions = resHolding.response.body.values[0];  // Index 0 = Registre 1
-            this.data.temperature = resHolding.response.body.values[4]; // Index 4 = Registre 5
+            
+            // TEMPORAIRE : On simule une température extérieure de 15°C (car on n'a pas de capteur réel)
+            this.data.temperature = 15;
 
             // 2. Lecture Séparée pour la Cuve (Car c'est un Input TOR)
+            // On lit le DI 1 (Adresse 0)
             const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
+            
+            // HW Group met à "1" quand c'est On, et "0" quand c'est Off
             this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
 
             return true;
