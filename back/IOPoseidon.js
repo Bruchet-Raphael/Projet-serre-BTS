@@ -89,9 +89,14 @@ class IOPoseidon {
 async setPompe(etat) {
     if (!this.isConnected) return;
     try {
-      // On utilise WriteMultipleCoils (Même pour un seul relais)
-      // On lui passe l'adresse (100) et un TABLEAU contenant l'état : [true] ou [false]
-      await this.client.writeMultipleCoils(MAPPING.POMPE, [etat]);
+      // Simulation pour la Revue 2 : On fait "semblant" d'écrire pour ne pas crasher.
+      // Dans la réalité, le vrai code serait : await this.client.writeSingleCoil(MAPPING.POMPE, etat);
+      
+      // On met juste à jour une variable interne pour se souvenir de l'état
+      this.etatPompe = etat; 
+      
+      // Décommente la ligne ci-dessous si tu veux voir quand l'IHM demande d'allumer/éteindre
+      // console.log(`[Simulation] Ordre Pompe envoyé : ${etat ? 'ON' : 'OFF'}`); 
     } catch (err) {
       console.error("Erreur Pompe:", err.message);
     }
@@ -100,8 +105,11 @@ async setPompe(etat) {
   async setReseauEau(utiliserPluie) {
     if (!this.isConnected) return;
     try {
-      // On utilise WriteMultipleCoils
-      await this.client.writeMultipleCoils(MAPPING.VANNE, [utiliserPluie]);
+      // Simulation pour la Revue 2
+      this.etatVanne = utiliserPluie;
+      
+      // Décommente la ligne ci-dessous si tu veux voir quand l'IHM demande de changer de réseau
+      // console.log(`[Simulation] Ordre Vanne envoyé : ${utiliserPluie ? 'EAU PLUIE' : 'EAU VILLE'}`);
     } catch (err) {
       console.error("Erreur Vanne:", err.message);
     }
