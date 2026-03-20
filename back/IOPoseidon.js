@@ -3,10 +3,10 @@ const Modbus = require("jsmodbus");
 
 // --- CONSTANTES DE MAPPING (Standard HW Group Poseidon) ---
 const MAPPING = {
-  NIVEAU_CUVE: 0, // DI 1 = Adresse Discrete Input 0
-  COMPTEUR: 1, // DI 2 = Adresse Discrete Input 1 (pour lire l'état)
-  VANNE: 0, // DO 1 = Coil 0
-  POMPE: 1, // DO 2 = Coil 1
+  NIVEAU_CUVE: 99, // Chez HW Group, le DI 1 est à l'adresse 99
+  COMPTEUR: 100, // Le DI 2 (Débitmètre) est à 100
+  VANNE: 151, // L'ID 151 de la Vanne
+  POMPE: 152, // L'ID 152 de la Pompe
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
