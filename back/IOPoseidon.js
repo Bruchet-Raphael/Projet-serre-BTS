@@ -92,6 +92,13 @@ class IOPoseidon {
       await this.client.writeSingleCoil(MAPPING.POMPE, etat);
     } catch (err) {
       console.error("Erreur Pompe:", err.message);
+      // LE DETECTEUR DE MENSONGE :
+      if (err.response && err.response.body) {
+        console.error(
+          "🚨 CODE D'ERREUR MODBUS EXACT :",
+          err.response.body.exceptionCode,
+        );
+      }
     }
   }
 
@@ -101,6 +108,13 @@ class IOPoseidon {
       await this.client.writeSingleCoil(MAPPING.VANNE, utiliserPluie);
     } catch (err) {
       console.error("Erreur Vanne:", err.message);
+      // LE DETECTEUR DE MENSONGE :
+      if (err.response && err.response.body) {
+        console.error(
+          "🚨 CODE D'ERREUR MODBUS EXACT :",
+          err.response.body.exceptionCode,
+        );
+      }
     }
   }
 
