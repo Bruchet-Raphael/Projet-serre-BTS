@@ -896,3 +896,434 @@ body {
 .bg-success   { background-color: var(--pale-green); }
 .bg-warning   { background-color: #FFF3E0; }
 .bg-danger    { background-color: #FFEBEE; }
+
+/* ========================================
+   CONTROL PANELS — EFFETS ANIMÉS
+   Activés via la classe .mode-active sur .control-panel
+   JS: panel.classList.add/remove('mode-active')
+======================================== */
+
+/* BASE : chaque panel devient un canvas relatif */
+.control-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Particules communes : pseudo-éléments générés en JS via <span class="particle"> */
+.control-panel .particle {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    will-change: transform, opacity;
+}
+
+/* ========================================
+   🔥 CHAUFFAGE — Feu qui embrase le panel
+======================================== */
+.control-panel.heating-active {
+    background: linear-gradient(180deg, #FFF3E0 0%, #FFE0B2 60%, #FFCCBC 100%);
+    border-color: #FF7043;
+    box-shadow: 0 0 0 2px rgba(255, 112, 67, 0.25), 0 4px 20px rgba(255, 87, 34, 0.2);
+    transition: background 0.6s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.control-panel.heating-active .control-header {
+    border-bottom-color: rgba(255, 112, 67, 0.3);
+}
+
+.control-panel.heating-active .control-header h3 {
+    color: #BF360C;
+}
+
+/* Flammes via pseudo-éléments */
+.control-panel.heating-active::before {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 55px;
+    background:
+        radial-gradient(ellipse 18px 32px at 15% 100%, #FF5722 0%, transparent 70%),
+        radial-gradient(ellipse 22px 40px at 28% 100%, #FF8F00 0%, transparent 65%),
+        radial-gradient(ellipse 16px 28px at 42% 100%, #FF6D00 0%, transparent 70%),
+        radial-gradient(ellipse 24px 44px at 57% 100%, #FF3D00 0%, transparent 60%),
+        radial-gradient(ellipse 18px 30px at 70% 100%, #FF8F00 0%, transparent 70%),
+        radial-gradient(ellipse 20px 38px at 83% 100%, #FF5722 0%, transparent 65%),
+        radial-gradient(ellipse 16px 26px at 95% 100%, #FF6D00 0%, transparent 72%);
+    animation: fire-base 1.4s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.control-panel.heating-active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        180deg,
+        transparent 55%,
+        rgba(255, 152, 0, 0.06) 75%,
+        rgba(255, 87, 34, 0.12) 90%,
+        rgba(255, 61, 0, 0.18) 100%
+    );
+    animation: fire-glow 2s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Étincelles montantes */
+.control-panel.heating-active .spark {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #FFEB3B;
+    border-radius: 50%;
+    bottom: 10px;
+    animation: spark-rise var(--duration, 1.8s) ease-in infinite var(--delay, 0s);
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes fire-base {
+    0%   { transform: scaleX(1)   scaleY(1)   translateY(0); opacity: 0.95; }
+    33%  { transform: scaleX(1.04) scaleY(0.92) translateY(2px); }
+    66%  { transform: scaleX(0.97) scaleY(1.06) translateY(-2px); }
+    100% { transform: scaleX(1.02) scaleY(0.95) translateY(1px); opacity: 1; }
+}
+
+@keyframes fire-glow {
+    0%   { opacity: 0.7; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+@keyframes spark-rise {
+    0%   { transform: translateY(0)   translateX(0)    scale(1);   opacity: 1; }
+    60%  { transform: translateY(-55px) translateX(var(--drift, 8px)) scale(0.7); opacity: 0.8; }
+    100% { transform: translateY(-90px) translateX(var(--drift2, 14px)) scale(0.2); opacity: 0; }
+}
+
+/* ========================================
+   🌧️ ARROSAGE — Pluie qui tombe
+======================================== */
+.control-panel.irrigation-active {
+    background: linear-gradient(180deg, #E8F4FD 0%, #DCEEFB 50%, #CCE5F8 100%);
+    border-color: #42A5F5;
+    box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2), 0 4px 20px rgba(33, 150, 243, 0.15);
+    transition: background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.control-panel.irrigation-active .control-header {
+    border-bottom-color: rgba(66, 165, 245, 0.3);
+}
+
+.control-panel.irrigation-active .control-header h3 {
+    color: #0D47A1;
+}
+
+/* Nuage en haut */
+.control-panel.irrigation-active::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 38px;
+    background:
+        radial-gradient(ellipse 55px 28px at 50% 60%, rgba(144, 202, 249, 0.9) 0%, transparent 100%),
+        radial-gradient(ellipse 32px 22px at 28% 50%, rgba(144, 202, 249, 0.85) 0%, transparent 100%),
+        radial-gradient(ellipse 30px 20px at 72% 50%, rgba(144, 202, 249, 0.85) 0%, transparent 100%),
+        radial-gradient(ellipse 24px 18px at 18% 65%, rgba(187, 222, 251, 0.8) 0%, transparent 100%),
+        radial-gradient(ellipse 24px 18px at 82% 65%, rgba(187, 222, 251, 0.8) 0%, transparent 100%);
+    animation: cloud-bob 4s ease-in-out infinite alternate;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Fond de pluie avec gradient */
+.control-panel.irrigation-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        175deg,
+        transparent 0px,
+        transparent 18px,
+        rgba(66, 165, 245, 0.08) 18px,
+        rgba(66, 165, 245, 0.08) 19px
+    );
+    animation: rain-fall 0.9s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Gouttes individuelles */
+.control-panel.irrigation-active .raindrop {
+    position: absolute;
+    width: 1.5px;
+    height: 10px;
+    background: linear-gradient(180deg, transparent, rgba(66, 165, 245, 0.8));
+    border-radius: 1px;
+    top: -12px;
+    animation: raindrop-fall var(--duration, 1.1s) linear infinite var(--delay, 0s);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Éclaboussures en bas */
+.control-panel.irrigation-active .splash {
+    position: absolute;
+    bottom: 8px;
+    width: 6px;
+    height: 3px;
+    border-radius: 50%;
+    border: 1px solid rgba(66, 165, 245, 0.5);
+    animation: splash-expand var(--duration, 0.6s) ease-out infinite var(--delay, 0s);
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes cloud-bob {
+    0%   { transform: translateX(-50%) translateY(0); }
+    100% { transform: translateX(-50%) translateY(-4px); }
+}
+
+@keyframes rain-fall {
+    0%   { background-position: 0 0; }
+    100% { background-position: -5px 30px; }
+}
+
+@keyframes raindrop-fall {
+    0%   { transform: translateY(0);    opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.8; }
+    100% { transform: translateY(calc(var(--panel-h, 200px) + 20px)); opacity: 0; }
+}
+
+@keyframes splash-expand {
+    0%   { transform: scale(0);   opacity: 0.9; }
+    100% { transform: scale(3.5); opacity: 0; }
+}
+
+/* ========================================
+   💨 VENTILATION — Vent violent
+======================================== */
+.control-panel.ventilation-active {
+    background: linear-gradient(135deg, #F0F7F0 0%, #E4F0E6 40%, #D8EBE4 100%);
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 2px rgba(102, 187, 106, 0.2), 0 4px 20px rgba(76, 175, 80, 0.15);
+    transition: background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.control-panel.ventilation-active .control-header {
+    border-bottom-color: rgba(102, 187, 106, 0.3);
+}
+
+.control-panel.ventilation-active .control-header h3 {
+    color: #1B5E20;
+}
+
+/* Rafales de vent — lignes courbes animées */
+.control-panel.ventilation-active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            2deg,
+            transparent 0px,
+            transparent 14px,
+            rgba(102, 187, 106, 0.12) 14px,
+            rgba(102, 187, 106, 0.12) 15px,
+            transparent 15px,
+            transparent 28px
+        );
+    animation: wind-sweep 0.6s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Tourbillon subtil en overlay */
+.control-panel.ventilation-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            -4deg,
+            transparent 0px,
+            transparent 22px,
+            rgba(165, 214, 167, 0.1) 22px,
+            rgba(165, 214, 167, 0.1) 23px,
+            transparent 23px,
+            transparent 46px
+        );
+    animation: wind-sweep 0.9s linear infinite reverse;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Particules de vent (feuilles / poussière) */
+.control-panel.ventilation-active .wind-particle {
+    position: absolute;
+    background: rgba(100, 180, 100, 0.5);
+    border-radius: 2px;
+    animation: wind-blow var(--duration, 1.2s) ease-in infinite var(--delay, 0s);
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes wind-sweep {
+    0%   { background-position: 0 0; }
+    100% { background-position: 60px 0; }
+}
+
+@keyframes wind-blow {
+    0%   { transform: translateX(-20px) translateY(0)              rotate(0deg);   opacity: 0; }
+    10%  { opacity: 0.8; }
+    80%  { opacity: 0.6; }
+    100% { transform: translateX(calc(var(--panel-w, 300px) + 30px)) translateY(var(--drift, -15px)) rotate(var(--spin, 180deg)); opacity: 0; }
+}
+
+/* ========================================
+   🌫️ BRUMISATEUR — Petite pluie fine / brume
+======================================== */
+.control-panel.misting-active {
+    background: linear-gradient(160deg, #F0FDF4 0%, #E6F7EC 40%, #DCF0E3 100%);
+    border-color: #81C784;
+    box-shadow: 0 0 0 2px rgba(129, 199, 132, 0.2), 0 4px 20px rgba(76, 175, 80, 0.1);
+    transition: background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.control-panel.misting-active .control-header {
+    border-bottom-color: rgba(129, 199, 132, 0.3);
+}
+
+.control-panel.misting-active .control-header h3 {
+    color: #1B5E20;
+}
+
+/* Brume douce en fond */
+.control-panel.misting-active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 30% 40%, rgba(129, 199, 132, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 70% 50% at 75% 70%, rgba(165, 214, 167, 0.1) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 55% 20%, rgba(200, 230, 201, 0.08) 0%, transparent 70%);
+    animation: mist-drift 5s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Voile de brume légère */
+.control-panel.misting-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        178deg,
+        transparent 0px,
+        transparent 22px,
+        rgba(129, 199, 132, 0.05) 22px,
+        rgba(129, 199, 132, 0.05) 23px
+    );
+    animation: mist-fall 2.8s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Micro-gouttelettes */
+.control-panel.misting-active .mistdrop {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(100, 180, 120, 0.65);
+    border-radius: 50%;
+    animation: mistdrop-drift var(--duration, 2.2s) ease-in-out infinite var(--delay, 0s);
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes mist-drift {
+    0%   { opacity: 0.7; transform: scale(1) translateX(0); }
+    50%  { opacity: 1; }
+    100% { opacity: 0.8; transform: scale(1.03) translateX(6px); }
+}
+
+@keyframes mist-fall {
+    0%   { background-position: 0 0; }
+    100% { background-position: 2px 40px; }
+}
+
+@keyframes mistdrop-drift {
+    0%   { transform: translateY(0)   translateX(0)   scale(1);   opacity: 0; }
+    20%  { opacity: 0.8; }
+    80%  { opacity: 0.5; }
+    100% { transform: translateY(calc(var(--panel-h, 180px) + 10px)) translateX(var(--drift, 12px)) scale(0.5); opacity: 0; }
+}
+
+/* ========================================
+   Z-INDEX : contenu au-dessus des effets
+======================================== */
+.control-panel.heating-active     .control-header,
+.control-panel.irrigation-active  .control-header,
+.control-panel.ventilation-active .control-header,
+.control-panel.misting-active     .control-header,
+.control-panel.heating-active     .control-body,
+.control-panel.irrigation-active  .control-body,
+.control-panel.ventilation-active .control-body,
+.control-panel.misting-active     .control-body {
+    position: relative;
+    z-index: 2;
+}
+
+/* Mode buttons : transparence légère pour laisser voir l'effet */
+.control-panel.heating-active     .mode-btn,
+.control-panel.irrigation-active  .mode-btn,
+.control-panel.ventilation-active .mode-btn,
+.control-panel.misting-active     .mode-btn {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+.control-panel.heating-active .mode-btn.active {
+    background: rgba(229, 57, 53, 0.85);
+    border-color: #E53935;
+    color: white;
+}
+
+.control-panel.irrigation-active .mode-btn.active {
+    background: rgba(25, 118, 210, 0.85);
+    border-color: #1976D2;
+    color: white;
+}
+
+.control-panel.ventilation-active .mode-btn.active {
+    background: rgba(46, 107, 53, 0.85);
+    border-color: #2E6B35;
+    color: white;
+}
+
+.control-panel.misting-active .mode-btn.active {
+    background: rgba(56, 142, 60, 0.85);
+    border-color: #388E3C;
+    color: white;
+}
+
+/* Slider adapté à chaque thème */
+.control-panel.heating-active .slider::-webkit-slider-thumb     { background: #E53935; }
+.control-panel.irrigation-active .slider::-webkit-slider-thumb  { background: #1976D2; }
+.control-panel.ventilation-active .slider::-webkit-slider-thumb { background: #2E6B35; }
+.control-panel.misting-active .slider::-webkit-slider-thumb     { background: #388E3C; }
+
+.control-panel.heating-active .slider     { background: linear-gradient(90deg, #FFCDD2, #EF9A9A); }
+.control-panel.irrigation-active .slider  { background: linear-gradient(90deg, #BBDEFB, #90CAF9); }
+.control-panel.ventilation-active .slider { background: linear-gradient(90deg, #C8E6C9, #A5D6A7); }
+.control-panel.misting-active .slider     { background: linear-gradient(90deg, #C8E6C9, #A5D6A7); }
