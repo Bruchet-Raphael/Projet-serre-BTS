@@ -3,10 +3,10 @@ const Modbus = require("jsmodbus");
 
 // --- CONSTANTES DE MAPPING (Standard HW Group Poseidon) ---
 const MAPPING = {
-  NIVEAU_CUVE: 99, // Chez HW Group, le DI 1 est à l'adresse 99
-  COMPTEUR: 100, // Le DI 2 (Débitmètre) est à 100
-  VANNE: 99, // L'ID 99 de la Vanne
-  POMPE: 100, // L'ID 100 de la Pompe
+  NIVEAU_CUVE: 99,  
+  COMPTEUR: 100,    
+  VANNE: 99,       // Les adresses DO standard
+  POMPE: 100       // Les adresses DO standard
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -86,35 +86,24 @@ class IOPoseidon {
     return this.data.impulsions * LITRES_PAR_IMPULSION;
   }
 
-  async setPompe(etat) {
+async setPompe(etat) {
     if (!this.isConnected) return;
     try {
-      await this.client.writeSingleCoil(MAPPING.POMPE, etat);
+      // On utilise WriteMultipleCoils (Même pour un seul relais)
+      // On lui passe l'adresse (100) et un TABLEAU contenant l'état : [true] ou [false]
+      await this.client.writeMultipleCoils(MAPPING.POMPE, [etat]);
     } catch (err) {
       console.error("Erreur Pompe:", err.message);
-      // LE DETECTEUR DE MENSONGE :
-      if (err.response && err.response.body) {
-        console.error(
-          "🚨 CODE D'ERREUR MODBUS EXACT :",
-          err.response.body.exceptionCode,
-        );
-      }
     }
   }
 
   async setReseauEau(utiliserPluie) {
     if (!this.isConnected) return;
     try {
-      await this.client.writeSingleCoil(MAPPING.VANNE, utiliserPluie);
+      // On utilise WriteMultipleCoils
+      await this.client.writeMultipleCoils(MAPPING.VANNE, [utiliserPluie]);
     } catch (err) {
       console.error("Erreur Vanne:", err.message);
-      // LE DETECTEUR DE MENSONGE :
-      if (err.response && err.response.body) {
-        console.error(
-          "🚨 CODE D'ERREUR MODBUS EXACT :",
-          err.response.body.exceptionCode,
-        );
-      }
     }
   }
 
