@@ -363,6 +363,7 @@ function setModeButton(panel, mode) {
     if (activeBtn) {
         activeBtn.classList.add('active');
     }
+    applyEffectsFromLoadedControles();
 }
 
 // ========================================
