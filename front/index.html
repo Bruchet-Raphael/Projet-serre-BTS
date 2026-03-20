@@ -43,6 +43,7 @@
     // Vérifier l'authentification au chargement
     checkAuth();
 </script>
+<script src="/front/panel-effects.js"></script>
 
 <body>
     <!-- Navigation -->
@@ -62,7 +63,8 @@
                 <li><a href="#controls" class="nav-link">Contrôles</a></li>
                 <li><a href="#history" class="nav-link">Historique</a></li>
                 <li><a href="#alerts" class="nav-link">Alertes</a></li>
-                <li><a href="/front/admin.html" class="nav-link" id="nav-admin" style="display: none; color: #FF9800;">⚙️ Admin</a></li>
+                <li><a href="/front/admin.html" class="nav-link" id="nav-admin"
+                        style="display: none; color: #FF9800;">⚙️ Admin</a></li>
             </ul>
             <button id="btn-auth" onclick="gererConnexion()"
                 style="cursor: pointer; padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold;">
@@ -245,13 +247,16 @@
                         </div>
                         <div class="control-settings">
                             <label class="settings-label">
-                                <svg class="hourglass-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg class="hourglass-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
                                     <path d="M6 2h12v6h-2l2 4-2 4h2v6H6v-6h2l-2-4 2-4H6V2z" />
                                 </svg>
                                 Durée: <span id="ventilation-duration">3</span>h
                             </label>
-                            <input type="range" id="ventilation-duration-slider" min="1" max="6" value="3" class="slider" disabled>
-                            <small class="duration-info" style="color: #999; font-size: 0.75rem;">Mode Auto: paramètre global</small>
+                            <input type="range" id="ventilation-duration-slider" min="1" max="6" value="3"
+                                class="slider" disabled>
+                            <small class="duration-info" style="color: #999; font-size: 0.75rem;">Mode Auto: paramètre
+                                global</small>
                         </div>
                     </div>
                 </div>
@@ -291,13 +296,15 @@
                         <h3 class="chart-title">Température & Humidité (Historique)</h3>
                         <div class="chart-controls">
                             <button id="btn-chart-prev" class="chart-nav-btn" title="Reculer dans l'historique">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <polyline points="15 18 9 12 15 6"></polyline>
                                 </svg>
                             </button>
                             <span id="chart-info" class="chart-info">En direct</span>
                             <button id="btn-chart-next" class="chart-nav-btn" title="Avancer dans l'historique">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <polyline points="9 18 15 12 9 6"></polyline>
                                 </svg>
                             </button>
@@ -354,6 +361,8 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/front/script.js"></script>
+    <script src="/front/panel-effects.js"></script>
+
 </body>
 
 </html>
