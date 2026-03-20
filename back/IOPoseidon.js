@@ -5,8 +5,8 @@ const Modbus = require("jsmodbus");
 const MAPPING = {
   NIVEAU_CUVE: 99, // Chez HW Group, le DI 1 est à l'adresse 99
   COMPTEUR: 100, // Le DI 2 (Débitmètre) est à 100
-  VANNE: 151, // L'ID 151 de la Vanne
-  POMPE: 152, // L'ID 152 de la Pompe
+  VANNE: 99, // L'ID 99 de la Vanne
+  POMPE: 100, // L'ID 100 de la Pompe
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
