@@ -758,17 +758,50 @@ body {
 .chart-container-large {
     width: 100%;
     position: relative;
-    background: linear-gradient(135deg, #F1F8F6 0%, #E8F5E9 100%);
+    background: 
+        linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(139, 195, 74, 0.08) 50%, rgba(200, 230, 201, 0.12) 100%),
+        linear-gradient(45deg, #F1F8F6 25%, transparent 25%, transparent 75%, #F1F8F6 75%, #F1F8F6),
+        linear-gradient(45deg, #F1F8F6 25%, transparent 25%, transparent 75%, #F1F8F6 75%, #F1F8F6),
+        #E8F5E9;
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    background-position: 0 0, 0 0, 20px 20px;
+    background-attachment: fixed;
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
     border-left: 4px solid #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.15);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    overflow: hidden;
+}
+
+.chart-container-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(76, 175, 80, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 90% 90%, rgba(200, 230, 201, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.chart-container-large > * {
+    position: relative;
+    z-index: 1;
 }
 
 .chart-container-large:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.2);
+    box-shadow: 
+        0 6px 16px rgba(76, 175, 80, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .chart-wrapper {
