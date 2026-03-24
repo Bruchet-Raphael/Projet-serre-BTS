@@ -624,6 +624,7 @@ app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   });
 });
 
+/*
 async function regulateLoop() {
     const socket = new net.Socket();
     const client = new Modbus.client.TCP(socket);
@@ -668,6 +669,8 @@ async function regulateLoop() {
         }
     });
 }
+
+*/
 
 // ========================================
 // 🔐 Admin Middleware
@@ -893,8 +896,10 @@ app.get('/status', async (req, res) => {
   }
 });
 
+/*
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
+*/
 
 // =======================================
 // START SERVER
