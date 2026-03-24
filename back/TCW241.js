@@ -1,3 +1,4 @@
+//const SensorData = require('./SensorData');
 class TCW241 {
     constructor() {
         this.temperature = null;
@@ -279,15 +280,15 @@ if (consigne.temperature !== null && temp !== null) {
   }
 
   static fromMonitor(monitor) {
-    const obj = new SensorData();
+    const obj = new TCW241();
 
     const s1 = monitor?.S?.S1 || {};
-    obj.temperature = SensorData.parseNumber(s1.item1?.value ?? null);
-    obj.humair = SensorData.parseNumber(s1.item2?.value ?? null);
+    obj.temperature = TCW241.parseNumber(s1.item1?.value ?? null);
+    obj.humair = TCW241.parseNumber(s1.item2?.value ?? null);
 
-    obj.h1 = SensorData.parseNumber(monitor?.AI?.AI1?.value ?? null);
-    obj.h2 = SensorData.parseNumber(monitor?.AI?.AI2?.value ?? null);
-    obj.h3 = SensorData.parseNumber(monitor?.AI?.AI3?.value ?? null);
+    obj.h1 = TCW241.parseNumber(monitor?.AI?.AI1?.value ?? null);
+    obj.h2 = TCW241.parseNumber(monitor?.AI?.AI2?.value ?? null);
+    obj.h3 = TCW241.parseNumber(monitor?.AI?.AI3?.value ?? null);
 
     const hs = [obj.h1, obj.h2, obj.h3].filter(v => v !== null);
     obj.humiditeMoyenne = hs.length > 0

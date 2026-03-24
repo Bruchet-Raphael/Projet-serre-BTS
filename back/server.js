@@ -10,6 +10,7 @@ const Modbus = require('jsmodbus');
 const net = require('net');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const axios = require('axios');
 
 // --- Import de la classe Poseidon ---
 const IOPoseidon = require('./IOPoseidon');
@@ -860,6 +861,36 @@ app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req
 
     res.json({ success: true, message: 'Rôle mis à jour avec succès' });
   });
+});
+
+app.get('/status', async (req, res) => {
+  try {
+    const response = await axios.get(process.env.TARGET_URL, {
+      timeout: 5000,
+      responseType: 'json',
+      auth: { username: process.env.US, password: process.env.PSW }
+    });
+
+    const monitor = response.data?.Monitor || {};
+    const sensorData = TCW241.fromMonitor(monitor);
+
+    TCW241.store.push(sensorData);
+
+    console.log('SensorData:', sensorData);
+
+    res.status(200).json({
+      success: true,
+      source: process.env.TARGET_URL,
+      data: sensorData
+    });
+  } catch (error) {
+    console.error('Erreur requête:', error.message);
+    res.status(502).json({
+      success: false,
+      message: "Impossible de récupérer status.json",
+      error: error.message
+    });
+  }
 });
 
 setInterval(regulateLoop, 10000);
