@@ -311,10 +311,10 @@ if (consigne.temperature !== null && temp !== null) {
   toJSON() {
     return {
       temperature: this.temperature,
-      h1: this.h1,
-      h2: this.h2,
-      h3: this.h3,
-      humiditeMoyenne: this.humiditeMoyenne,
+      h1: this.h1/5*100,
+      h2: this.h2/5*100,
+      h3: this.h3/5*100,
+      humiditeMoyenne: this.humiditeMoyenne/5*100,
       humair: this.humair,
       r1: this.r1,
       r2: this.r2,
