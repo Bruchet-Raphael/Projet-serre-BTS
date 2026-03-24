@@ -7,6 +7,10 @@ class TCW241 {
         this.h3 = null;
         this.humiditeMoyenne = null;
         this.humair = null;
+        this.r1 = null;
+        this.r2 = null;
+        this.r3 = null;
+        this.r4 = null;
         this.timestamp = new Date();
     }
 
@@ -290,6 +294,11 @@ if (consigne.temperature !== null && temp !== null) {
     obj.h2 = TCW241.parseNumber(monitor?.AI?.AI2?.value ?? null);
     obj.h3 = TCW241.parseNumber(monitor?.AI?.AI3?.value ?? null);
 
+    obj.r1 = TCW241.parseNumber(monitor?.R?.R1?.valuebin ?? null);
+    obj.r2 = TCW241.parseNumber(monitor?.R?.R2?.valuebin ?? null);
+    obj.r3 = TCW241.parseNumber(monitor?.R?.R3?.valuebin ?? null);
+    obj.r4 = TCW241.parseNumber(monitor?.R?.R4?.valuebin ?? null);
+
     const hs = [obj.h1, obj.h2, obj.h3].filter(v => v !== null);
     obj.humiditeMoyenne = hs.length > 0
       ? Math.round((hs.reduce((a, b) => a + b, 0) / hs.length) * 100) / 100
@@ -307,6 +316,10 @@ if (consigne.temperature !== null && temp !== null) {
       h3: this.h3,
       humiditeMoyenne: this.humiditeMoyenne,
       humair: this.humair,
+      r1: this.r1,
+      r2: this.r2,
+      r3: this.r3,
+      r4: this.r4,
       timestamp: this.timestamp.toISOString()
     };
   }
