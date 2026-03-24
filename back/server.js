@@ -125,7 +125,7 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ success: false, message: 'Login et mot de passe requis' });
   }
 
-  const query = 'SELECT * FROM Utilisateur WHERE login = ?';
+  const query = 'SELECT * FROM User WHERE login = ?';
   db.query(query, [login], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
     if (results.length === 0) return res.status(401).json({ success: false, message: 'Utilisateur inexistant' });
@@ -177,7 +177,7 @@ app.post('/api/inscription', (req, res) => {
     return res.status(400).json({ success: false, message: 'Tous les champs sont requis' });
   }
 
-  const checkQuery = 'SELECT * FROM Utilisateur WHERE Login = ? OR Mail = ?';
+  const checkQuery = 'SELECT * FROM User WHERE Login = ? OR Mail = ?';
   db.query(checkQuery, [username, email], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
     if (results.length > 0) return res.status(409).json({ success: false, message: 'Utilisateur ou email déjà utilisé' });
@@ -185,7 +185,7 @@ app.post('/api/inscription', (req, res) => {
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
-      const insertQuery = 'INSERT INTO Utilisateur (nom, prenom, mail, login, mdp) VALUES (?, ?, ?, ?, ?)';
+      const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp) VALUES (?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword], (err, results) => {
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
@@ -505,7 +505,7 @@ app.get('/api/info', authMiddleware, async (req, res) => {
 app.get('/api/user-role', authMiddleware, (req, res) => {
   const userId = req.user.sub;
 
-  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
+  const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -682,7 +682,7 @@ function isAdminMiddleware(req, res, next) {
     return res.status(401).json({ success: false, message: 'Utilisateur non authentifié' });
   }
 
-  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
+  const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err || results.length === 0) {
       return res.status(403).json({ success: false, message: 'Utilisateur introuvable' });
@@ -799,7 +799,7 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
 
 // GET - Liste de tous les utilisateurs (Admin uniquement)
 app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
-  const query = 'SELECT id, login, mail, role FROM Utilisateur ORDER BY login ASC';
+  const query = 'SELECT id, login, mail, role FROM User ORDER BY login ASC';
   
   db.query(query, (err, results) => {
     if (err) {
@@ -851,7 +851,7 @@ app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req
     return res.status(400).json({ success: false, message: 'Rôle invalide' });
   }
 
-  const query = 'UPDATE Utilisateur SET role = ? WHERE id = ?';
+  const query = 'UPDATE User SET role = ? WHERE id = ?';
   db.query(query, [newRole, userId], (err, results) => {
     if (err) {
       console.error('Erreur mise à jour rôle:', err);
