@@ -177,7 +177,7 @@ app.post('/api/inscription', (req, res) => {
     return res.status(400).json({ success: false, message: 'Tous les champs sont requis' });
   }
 
-  const checkQuery = 'SELECT * FROM User WHERE Login = ? OR Mail = ?';
+  const checkQuery = 'SELECT * FROM User WHERE login = ? OR mail = ?';
   db.query(checkQuery, [username, email], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
     if (results.length > 0) return res.status(409).json({ success: false, message: 'Utilisateur ou email déjà utilisé' });
@@ -443,9 +443,10 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
         h1,
         h2,
         h3,
-        humidite_moyenne,
+        humidite_sol,
         humidite_air,
-        timestamp
+        conso_total,
+        date
       FROM capteurs
       WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
       ORDER BY timestamp ASC
@@ -811,33 +812,6 @@ app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
       success: true, 
       users: results,
       count: results.length
-    });
-  });
-});
-
-// GET - Récupérer l'historique des actions (Admin uniquement)
-app.get('/api/admin/logs', authMiddleware, isAdminMiddleware, (req, res) => {
-  const query = `
-    SELECT 
-      id, 
-      user_id, 
-      action, 
-      details, 
-      timestamp 
-    FROM AuditLog 
-    ORDER BY timestamp DESC 
-    LIMIT 500`;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Erreur récupération logs:', err);
-      return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    }
-
-    res.json({ 
-      success: true, 
-      logs: results || [],
-      count: results ? results.length : 0
     });
   });
 });
