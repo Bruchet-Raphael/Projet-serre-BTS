@@ -568,7 +568,7 @@ async function saveLoop() {
         const tcw = await readTCW241();
 
         const sql = `
-            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_moyenne ,humidite_air , timestamp)
+            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_sol, conso_total, humidite_air, date)
             VALUES (?, ?, ?, ?, ?, ?, NOW())
         `;
 
@@ -625,7 +625,6 @@ app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   });
 });
 
-/*
 async function regulateLoop() {
     const socket = new net.Socket();
     const client = new Modbus.client.TCP(socket);
@@ -665,13 +664,11 @@ async function regulateLoop() {
 });
 
 
-        } catch (err) {
+        } catch (err) { 
             socket.end();
         }
     });
 }
-
-*/
 
 // ========================================
 // 🔐 Admin Middleware
