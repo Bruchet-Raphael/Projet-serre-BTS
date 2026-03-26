@@ -579,7 +579,9 @@ async function saveLoop() {
             tcw.h2,
             tcw.h3,
             tcw.humiditeMoyenne,
-            tcw.humair
+            tcw.humair,
+            tcw.conso_total,
+            tcw.conso_pluie
         ]);
 
     } catch (err) {
