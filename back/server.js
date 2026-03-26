@@ -448,7 +448,7 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
           conso_total,
           conso_pluie,
           date
-      FROM mesures
+      FROM Capteur
       WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
       ORDER BY date ASC
       `;
@@ -569,9 +569,9 @@ async function saveLoop() {
         const tcw = await readTCW241();
 
         const sql = `
-            INSERT INTO capteurs (temperature, h1, h2, h3, humidite_sol, conso_total, humidite_air, date)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        `;
+                INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+              `;
 
         db.query(sql, [
             tcw.temperature,
