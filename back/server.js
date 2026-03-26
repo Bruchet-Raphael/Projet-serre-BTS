@@ -437,20 +437,21 @@ app.get('/', (req, res) => {
 app.get('/api/historique-24h', authMiddleware, (req, res) => {
   try {
     const sql = `
-      SELECT 
-        id,
-        temperature,
-        h1,
-        h2,
-        h3,
-        humidite_sol,
-        humidite_air,
-        conso_total,
-        date
-      FROM capteurs
-      WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-      ORDER BY timestamp ASC
-    `;
+      SELECT
+          id,
+          temperature,
+          h1,
+          h2,
+          h3,
+          humidite_sol,
+          humidite_air,
+          conso_total,
+          conso_pluie,
+          date
+      FROM mesures
+      WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      ORDER BY date ASC
+      `;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -639,16 +640,17 @@ async function regulateLoop() {
             const data = await tcw.getAll(client);
 
             // Lecture consigne BDD
-            db.query("SELECT temperature, humidite_moyenne, humidite_air, relai_0, relai_1, relai_2, relai_3 FROM Consigne LIMIT 1", async (err, rows) => {
-    if (err || rows.length === 0) {
-        console.error('Erreur lecture consigne :', err);
-        socket.end();
-        return;
-    }
+            db.query(`
+                  SELECT temperature, humidite_sol, humidite_air, h1, h2, h3, conso_total, conso_pluie, date FROM Capteur ORDER BY date DESC LIMIT 1`, async (err, rows) => {
+                if (err || rows.length === 0) {
+                  console.error('Erreur lecture consigne :', err);
+                  socket.end();
+                  return;
+                }
 
     const consigne = {
         temperature: rows[0].temperature,
-        humidite: rows[0].humidite_moyenne,
+        humidite: rows[0].humidite_sol,
         humiditeair: rows[0].humidite_air,
         relay0: rows[0].relai_0,
         relay1: rows[0].relai_1,
@@ -867,10 +869,8 @@ app.get('/status', async (req, res) => {
   }
 });
 
-/*
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
-*/
 
 // =======================================
 // START SERVER
