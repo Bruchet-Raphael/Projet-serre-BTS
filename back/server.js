@@ -574,14 +574,14 @@ async function saveLoop() {
               `;
 
         db.query(sql, [
-            tcw.temperature,
+            tcw.conso_pluie,
             tcw.h1,
             tcw.h2,
             tcw.h3,
-            tcw.humiditeMoyenne,
             tcw.humair,
+            tcw.humiditeMoyenne,
+            tcw.temperature,
             tcw.conso_total,
-            tcw.conso_pluie
         ]);
 
     } catch (err) {
@@ -841,7 +841,7 @@ app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req
   });
 });
 
-app.get('/status', async (req, res) => {
+app.get('/status', authMiddleware,async (req, res) => {
   try {
     const response = await axios.get(process.env.TARGET_URL, {
       timeout: 5000,
