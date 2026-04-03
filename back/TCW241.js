@@ -1,3 +1,4 @@
+//const SensorData = require('./SensorData');
 class TCW241 {
     constructor() {
         this.temperature = null;
@@ -6,6 +7,10 @@ class TCW241 {
         this.h3 = null;
         this.humiditeMoyenne = null;
         this.humair = null;
+        this.r1 = null;
+        this.r2 = null;
+        this.r3 = null;
+        this.r4 = null;
         this.timestamp = new Date();
     }
 
@@ -269,15 +274,57 @@ if (consigne.temperature !== null && temp !== null) {
         }
     }
 }
-
-
-    
-
-    
-
     return true;
 }
 
+ static parseNumber(v) {
+    if (v === null || v === undefined) return null;
+    const n = parseFloat(String(v).replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  static fromMonitor(monitor) {
+    const obj = new TCW241();
+
+    const s1 = monitor?.S?.S1 || {};
+    obj.temperature = TCW241.parseNumber(s1.item1?.value ?? null);
+    obj.humair = TCW241.parseNumber(s1.item2?.value ?? null);
+
+    obj.h1 = TCW241.parseNumber(monitor?.AI?.AI1?.value ?? null);
+    obj.h2 = TCW241.parseNumber(monitor?.AI?.AI2?.value ?? null);
+    obj.h3 = TCW241.parseNumber(monitor?.AI?.AI3?.value ?? null);
+
+    obj.r1 = TCW241.parseNumber(monitor?.R?.R1?.valuebin ?? null);
+    obj.r2 = TCW241.parseNumber(monitor?.R?.R2?.valuebin ?? null);
+    obj.r3 = TCW241.parseNumber(monitor?.R?.R3?.valuebin ?? null);
+    obj.r4 = TCW241.parseNumber(monitor?.R?.R4?.valuebin ?? null);
+
+    const hs = [obj.h1, obj.h2, obj.h3].filter(v => v !== null);
+    obj.humiditeMoyenne = hs.length > 0
+      ? Math.round((hs.reduce((a, b) => a + b, 0) / hs.length) * 100) / 100
+      : null;
+
+    obj.timestamp = new Date();
+    return obj;
+  }
+
+  toJSON() {
+    return {
+      temperature: this.temperature,
+      h1: this.h1/5*100,
+      h2: this.h2/5*100,
+      h3: this.h3/5*100,
+      humiditeMoyenne: this.humiditeMoyenne/5*100,
+      humair: this.humair,
+      r1: this.r1,
+      r2: this.r2,
+      r3: this.r3,
+      r4: this.r4,
+      timestamp: this.timestamp.toISOString()
+    };
+  }
+
+    static store = [];
 }
 
 

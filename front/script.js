@@ -1,7 +1,14 @@
 // ========================================
 // CONFIGURATION & VARIABLES GLOBALES
 // ========================================
-
+// ========================================
+// 🛠️ MODE SIMULATION (Caché pour la soutenance)
+// ========================================
+window.SIMU = {
+    active: false,
+    temp: null,
+    hum: null
+}
 const CONFIG = {
     // Si tu es sur la VM, vérifie que l'IP ici est la bonne pour accéder au back
     apiUrl: 'http://172.29.160.160/api', // Ou '/api' si le front est servi par node
@@ -388,6 +395,13 @@ async function fetchSensorData() {
         const data = await response.json();
 
         if (data.success) {
+            // --- 🕵️‍♂️ INTERCEPTEUR DE SIMULATION ---
+            if (window.SIMU.active) {
+                if (window.SIMU.temp !== null) data.temperature = window.SIMU.temp;
+                if (window.SIMU.hum !== null) data.humiditeSol = window.SIMU.hum;
+            }
+            // --------------------------------------
+
             // Mise à jour unifiée (TCW + POSEIDON)
             updateSensorData({
                 temperature: data.temperature !== null ? parseFloat(data.temperature) : null,
