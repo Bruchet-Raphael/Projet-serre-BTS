@@ -35,7 +35,15 @@ const PORT = process.env.PORT;
 const JWT_SECRET = process.env.CODE;
 
 // ========================================
-// 🔌 Connexion MySQL
+// � CONSTANTES RÔLES
+// ========================================
+const ROLES = {
+  ADMIN: 'admin',
+  USER: 'user'
+};
+
+// ========================================
+// �🔌 Connexion MySQL
 // ========================================
 
 const db = mysql.createConnection({
@@ -155,11 +163,13 @@ app.post("/api/login", (req, res) => {
 
       const jti = uuidv4();
       const userId = user.Id || user.id || user.ID;
+      const userRole = (user.role || ROLES.USER).toLowerCase().trim();
 
-      // Access Token (15 minutes)
+      // Access Token (15 minutes) - INCLUT LE RÔLE
       const accessPayload = {
         sub: userId,
         login: user.Login,
+        role: userRole,
         jti,
         type: "accessToken",
       };
@@ -200,7 +210,7 @@ app.post("/api/login", (req, res) => {
       return res.json({
         success: true,
         message: "Connexion réussie",
-        role: user.role || "user",
+        role: userRole,
       });
     });
   });
@@ -232,10 +242,10 @@ app.post("/api/inscription", (req, res) => {
           .json({ success: false, message: "Erreur serveur" });
 
       const insertQuery =
-        "INSERT INTO Utilisateur (nom, prenom, mail, login, mdp) VALUES (?, ?, ?, ?, ?)";
+        "INSERT INTO Utilisateur (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)";
       db.query(
         insertQuery,
-        [nom, prenom, email, username, hashedPassword],
+        [nom, prenom, email, username, hashedPassword, ROLES.USER],
         (err, results) => {
           if (err)
             return res
@@ -245,10 +255,11 @@ app.post("/api/inscription", (req, res) => {
           const userId = results.insertId;
           const jti = uuidv4();
 
-          // Access Token (15 minutes)
+          // Access Token (15 minutes) - INCLUT LE RÔLE
           const accessPayload = {
             sub: userId,
             login: username,
+            role: ROLES.USER,
             jti,
             type: "accessToken",
           };
@@ -576,8 +587,18 @@ app.get("/api/info", authMiddleware, async (req, res) => {
 
 // GET - Récupérer le rôle de l'utilisateur connecté
 app.get("/api/user-role", authMiddleware, (req, res) => {
+  const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
+  // Si le rôle est dans le token JWT (après mise à jour), le retourner directement
+  if (tokenRole) {
+    return res.json({
+      success: true,
+      role: tokenRole,
+    });
+  }
+
+  // Fallback: Récupérer le rôle depuis la BD (pour compatibilité avec les tokens anciens)
   const query = "SELECT role FROM Utilisateur WHERE id = ?";
   db.query(query, [userId], (err, results) => {
     if (err) {
@@ -592,12 +613,13 @@ app.get("/api/user-role", authMiddleware, (req, res) => {
         .json({ success: false, message: "Utilisateur introuvable" });
     }
 
+    const dbRole = (results[0].role || ROLES.USER).toLowerCase().trim();
     res.json({
       success: true,
-      role: results[0].role || "user",
+      role: dbRole,
     });
   });
-});
+}); 
 
 async function readTCW241() {
   return new Promise((resolve, reject) => {
@@ -750,12 +772,21 @@ async function regulateLoop() {
 
 function isAdminMiddleware(req, res, next) {
   const userId = req.user?.sub;
+  const tokenRole = req.user?.role;
+
+  // Vérification du rôle depuis le token (rapide) - PRIORITÉ
+  if (tokenRole === ROLES.ADMIN) {
+    return next();
+  }
+
   if (!userId) {
     return res
       .status(401)
       .json({ success: false, message: "Utilisateur non authentifié" });
   }
 
+  // Fallback: Vérifier en base de données si le rôle n'est pas dans le token
+  // (pour compatibilité avec les tokens générés avant la mise à jour)
   const query = "SELECT role FROM Utilisateur WHERE id = ?";
   db.query(query, [userId], (err, results) => {
     if (err || results.length === 0) {
@@ -765,7 +796,9 @@ function isAdminMiddleware(req, res, next) {
     }
 
     const user = results[0];
-    if (user.role !== "admin") {
+    const dbRole = (user.role || "").toLowerCase().trim();
+    
+    if (dbRole !== ROLES.ADMIN) {
       return res
         .status(403)
         .json({
@@ -776,6 +809,18 @@ function isAdminMiddleware(req, res, next) {
 
     next();
   });
+}
+
+// ========================================
+// 🔐 User Middleware (Non-Admin only)
+// ========================================
+
+function isUserMiddleware(req, res, next) {
+  const tokenRole = req.user?.role;
+  
+  // Empêcher les admins d'accéder aux routes "user only" (si jamais utile)
+  // Pour l'instant, ce middleware accepte tout utilisateur authentifié
+  next();
 }
 
 // ========================================

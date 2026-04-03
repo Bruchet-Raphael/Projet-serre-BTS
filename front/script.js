@@ -452,8 +452,18 @@ async function updateAuthButton() {
 
                 if (roleResponse.ok) {
                     const roleData = await roleResponse.json();
-                    if (roleData.role === 'admin' && navAdmin) {
+                    const userRole = roleData.role?.toLowerCase().trim();
+                    
+                    // Sauvegarder le rôle localement
+                    if (userRole) {
+                        localStorage.setItem('userRole', userRole);
+                    }
+                    
+                    // Afficher le lien admin si l'utilisateur est admin
+                    if (userRole === 'admin' && navAdmin) {
                         navAdmin.style.display = "inline-block";
+                    } else if (navAdmin) {
+                        navAdmin.style.display = "none";
                     }
                 } else {
                     if (navAdmin) navAdmin.style.display = "none";
@@ -468,6 +478,7 @@ async function updateAuthButton() {
             btn.style.backgroundColor = "#2ecc71";
             btn.style.color = "white";
             if (navAdmin) navAdmin.style.display = "none";
+            localStorage.removeItem('userRole');
         }
     } catch (err) {
         // Erreur réseau
@@ -475,6 +486,7 @@ async function updateAuthButton() {
         btn.style.backgroundColor = "#2ecc71";
         btn.style.color = "white";
         if (navAdmin) navAdmin.style.display = "none";
+        localStorage.removeItem('userRole');
     }
 }
 
