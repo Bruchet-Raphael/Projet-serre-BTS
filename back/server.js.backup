@@ -145,11 +145,26 @@ app.post('/api/login', (req, res) => {
 
       const jti = uuidv4();
       const userId = user.Id || user.id || user.ID;
+<<<<<<< HEAD
       const userRole = (user.role || ROLES.USER).toLowerCase().trim();
 
       // Access Token (15 minutes) - INCLUT LE RÔLE
-      const accessPayload = { sub: userId, login: user.Login, role: userRole, jti, type: 'accessToken' };
+      const accessPayload = {
+        sub: userId,
+        login: user.Login,
+        role: userRole,
+        jti,
+        type: "accessToken",
+      };
+      const accessToken = jwt.sign(accessPayload, JWT_SECRET, {
+        expiresIn: "15m",
+      });
+=======
+      
+      // Access Token (15 minutes)
+      const accessPayload = { sub: userId, login: user.Login, jti, type: 'accessToken' };
       const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
 
       // Refresh Token (7 jours)
       const refreshTokenId = uuidv4();
@@ -175,7 +190,15 @@ app.post('/api/login', (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
       });
 
-      return res.json({ success: true, message: 'Connexion réussie', role: userRole });
+<<<<<<< HEAD
+      return res.json({
+        success: true,
+        message: "Connexion réussie",
+        role: userRole,
+      });
+=======
+      return res.json({ success: true, message: 'Connexion réussie', role: user.role || 'user' });
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
     });
   });
 });
@@ -192,17 +215,83 @@ app.post('/api/inscription', (req, res) => {
     if (results.length > 0) return res.status(409).json({ success: false, message: 'Utilisateur ou email déjà utilisé' });
 
     bcrypt.hash(password, 10, (err, hashedPassword) => {
+<<<<<<< HEAD
+      if (err)
+        return res
+          .status(500)
+          .json({ success: false, message: "Erreur serveur" });
+
+      const insertQuery =
+        "INSERT INTO Utilisateur (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)";
+      db.query(
+        insertQuery,
+        [nom, prenom, email, username, hashedPassword, ROLES.USER],
+        (err, results) => {
+          if (err)
+            return res
+              .status(500)
+              .json({ success: false, message: "Erreur serveur" });
+
+          const userId = results.insertId;
+          const jti = uuidv4();
+
+          // Access Token (15 minutes) - INCLUT LE RÔLE
+          const accessPayload = {
+            sub: userId,
+            login: username,
+            role: ROLES.USER,
+            jti,
+            type: "accessToken",
+          };
+          const accessToken = jwt.sign(accessPayload, JWT_SECRET, {
+            expiresIn: "15m",
+          });
+
+          // Refresh Token (7 jours)
+          const refreshTokenId = uuidv4();
+          const refreshPayload = {
+            sub: userId,
+            refreshTokenId,
+            type: "refreshToken",
+          };
+          const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, {
+            expiresIn: "7d",
+          });
+
+          // Stocker le refresh token
+          const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
+
+          // Envoyer les tokens dans des cookies HttpOnly
+          res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: false, // false pour développement HTTP, true pour HTTPS production
+            sameSite: "Lax",
+            maxAge: 15 * 60 * 1000, // 15 minutes en millisecondes
+          });
+
+          res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false, // false pour développement HTTP, true pour HTTPS production
+            sameSite: "Lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours en millisecondes
+          });
+
+          return res.json({ success: true, message: "Inscription réussie" });
+        },
+      );
+=======
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
-      const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
-      db.query(insertQuery, [nom, prenom, email, username, hashedPassword, ROLES.USER], (err, results) => {
+      const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp) VALUES (?, ?, ?, ?, ?)';
+      db.query(insertQuery, [nom, prenom, email, username, hashedPassword], (err, results) => {
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
         const userId = results.insertId;
         const jti = uuidv4();
 
-        // Access Token (15 minutes) - INCLUT LE RÔLE
-        const accessPayload = { sub: userId, login: username, role: ROLES.USER, jti, type: 'accessToken' };
+        // Access Token (15 minutes)
+        const accessPayload = { sub: userId, login: username, jti, type: 'accessToken' };
         const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
         // Refresh Token (7 jours)
@@ -217,20 +306,21 @@ app.post('/api/inscription', (req, res) => {
         // Envoyer les tokens dans des cookies HttpOnly
         res.cookie('accessToken', accessToken, {
           httpOnly: true,
-          secure: false,
+          secure: false, // false pour développement HTTP, true pour HTTPS production
           sameSite: 'Lax',
-          maxAge: 15 * 60 * 1000
+          maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
         });
 
         res.cookie('refreshToken', refreshToken, {
           httpOnly: true,
-          secure: false,
+          secure: false, // false pour développement HTTP, true pour HTTPS production
           sameSite: 'Lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
         });
 
         return res.json({ success: true, message: 'Inscription réussie' });
       });
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
     });
   });
 });
@@ -513,17 +603,27 @@ app.get('/api/info', authMiddleware, async (req, res) => {
 });
 
 // GET - Récupérer le rôle de l'utilisateur connecté
-app.get('/api/user-role', authMiddleware, (req, res) => {
+<<<<<<< HEAD
+app.get("/api/user-role", authMiddleware, (req, res) => {
   const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
-  // Si le rôle est dans le token JWT, le retourner directement
+  // Si le rôle est dans le token JWT (après mise à jour), le retourner directement
   if (tokenRole) {
-    return res.json({ success: true, role: tokenRole });
+    return res.json({
+      success: true,
+      role: tokenRole,
+    });
   }
 
-  // Fallback: Récupérer le rôle depuis la BD (pour compatibilité)
+  // Fallback: Récupérer le rôle depuis la BD (pour compatibilité avec les tokens anciens)
+  const query = "SELECT role FROM Utilisateur WHERE id = ?";
+=======
+app.get('/api/user-role', authMiddleware, (req, res) => {
+  const userId = req.user.sub;
+
   const query = 'SELECT role FROM User WHERE id = ?';
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
   db.query(query, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -533,8 +633,17 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
       return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
     }
 
+<<<<<<< HEAD
     const dbRole = (results[0].role || ROLES.USER).toLowerCase().trim();
-    res.json({ success: true, role: dbRole });
+    res.json({
+      success: true,
+      role: dbRole,
+=======
+    res.json({ 
+      success: true, 
+      role: results[0].role || 'user' 
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
+    });
   });
 }); 
 
@@ -705,17 +814,33 @@ function isAdminMiddleware(req, res, next) {
     return res.status(401).json({ success: false, message: 'Utilisateur non authentifié' });
   }
 
+<<<<<<< HEAD
+  // Fallback: Vérifier en base de données si le rôle n'est pas dans le token
+  // (pour compatibilité avec les tokens générés avant la mise à jour)
+  const query = "SELECT role FROM Utilisateur WHERE id = ?";
+=======
   const query = 'SELECT role FROM User WHERE id = ?';
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
   db.query(query, [userId], (err, results) => {
     if (err || results.length === 0) {
       return res.status(403).json({ success: false, message: 'Utilisateur introuvable' });
     }
 
     const user = results[0];
+<<<<<<< HEAD
     const dbRole = (user.role || "").toLowerCase().trim();
     
     if (dbRole !== ROLES.ADMIN) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Accès refusé : privilèges admin requis",
+        });
+=======
+    if (user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Accès refusé : privilèges admin requis' });
+>>>>>>> cbc5ce92e511583c87f13446203b6221956f555e
     }
 
     next();
