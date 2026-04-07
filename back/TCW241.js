@@ -5,7 +5,7 @@ class TCW241 {
         this.h1 = null;
         this.h2 = null;
         this.h3 = null;
-        this.humiditeMoyenne = null;
+        this.humiditeSol = null;
         this.humair = null;
         this.r1 = null;
         this.r2 = null;
@@ -300,9 +300,9 @@ if (consigne.temperature !== null && temp !== null) {
     obj.r4 = TCW241.parseNumber(monitor?.R?.R4?.valuebin ?? null);
 
     const hs = [obj.h1, obj.h2, obj.h3].filter(v => v !== null);
-    obj.humiditeMoyenne = hs.length > 0
-      ? Math.round((hs.reduce((a, b) => a + b, 0) / hs.length) * 100) / 100
-      : null;
+    obj.humiditeSol = (hs.length > 0
+      ? Math.round((hs.reduce((a, b) => a + b, 0) / hs.length) * 100) / 5
+      : null)
 
     obj.timestamp = new Date();
     return obj;
@@ -314,7 +314,7 @@ if (consigne.temperature !== null && temp !== null) {
       h1: this.h1/5*100,
       h2: this.h2/5*100,
       h3: this.h3/5*100,
-      humiditeMoyenne: this.humiditeMoyenne/5*100,
+      humiditeSol: this.humiditeSol/5*100,
       humair: this.humair,
       r1: this.r1,
       r2: this.r2,
