@@ -492,7 +492,16 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
 
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
-    const tcwData = await getTCWData();
+    const response = await axios.get(process.env.TARGET_URL, {
+      timeout: 5000,
+      responseType: 'json',
+      auth: { username: process.env.US, password: process.env.PSW }
+    });
+
+    const monitor = response.data?.Monitor || {};
+    const tcwData = TCW241.fromMonitor(monitor);
+
+    TCW241.store.push(tcwData);
 
     const waterData = {
         consoEau: poseidon.getConsommationLitres(),
