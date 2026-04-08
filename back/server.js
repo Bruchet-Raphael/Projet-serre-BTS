@@ -980,28 +980,6 @@ app.get('/status', authMiddleware,async (req, res) => {
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
 
-// ========================================
-// AGREGATION DES DONNÉES (TCW241 + POSEIDON) - Toutes les 10 secondes
-// ========================================
-async function getCapteurAggregation(req, res) {
-  try {
-    const [rows] = await db.execute(`
-      SELECT 
-        AVG(temperature) AS temperature_moy,
-        AVG(humidite_air) AS humidite_air_moy,
-        AVG(humidite_sol) AS humidite_sol_moy,
-        SUM(conso_total) AS conso_totale,
-        MAX(date) AS derniere_mesure
-      FROM Capteur
-    `);
-    
-    res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur lors de l'agrégation" });
-  }
-}
-
 // =======================================
 // START SERVER
 // ========================================
