@@ -127,7 +127,7 @@ function authMiddleware(req, res, next) {
 // 🔐 Routes LOGIN / INSCRIPTION
 // ========================================
 
-// GET - Vérifier si l'utilisateur est connecté (sans auth requise pour tester)
+// GET - Vérifier si l'User est connecté (sans auth requise pour tester)
 app.get('/api/verify-connection', (req, res) => {
   const token = extractToken(req);
   
@@ -162,10 +162,10 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ success: false, message: 'Login et mot de passe requis' });
   }
 
-  const query = 'SELECT * FROM Utilisateur WHERE login = ?';
+  const query = 'SELECT * FROM User WHERE login = ?';
   db.query(query, [login], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.length === 0) return res.status(401).json({ success: false, message: 'Utilisateur inexistant' });
+    if (results.length === 0) return res.status(401).json({ success: false, message: 'User inexistant' });
 
     const user = results[0];
     bcrypt.compare(password, user.mdp, (err, isMatch) => {
@@ -215,19 +215,23 @@ app.post('/api/inscription', (req, res) => {
     return res.status(400).json({ success: false, message: 'Tous les champs sont requis' });
   }
 
-  const checkQuery = 'SELECT * FROM Utilisateur WHERE login = ? OR mail = ?';
+  const checkQuery = 'SELECT * FROM User WHERE login = ? OR mail = ?';
   db.query(checkQuery, [username, email], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.length > 0) return res.status(409).json({ success: false, message: 'Utilisateur ou email déjà utilisé' });
+    if (results.length > 0) return res.status(409).json({ success: false, message: 'User ou email déjà utilisé' });
 
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword, ROLES.USER], (err, results) => {
 =======
       const insertQuery = 'INSERT INTO Utilisateur (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
+=======
+      const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
+>>>>>>> 292e2b155887f62bbb47a219ad5c0e092edee1ef
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword, 'user'], (err, results) => {
 >>>>>>> 6d096f5cc26902c6828d5e60674eed8974b9af3d
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -555,11 +559,12 @@ app.get('/api/info', authMiddleware, async (req, res) => {
   }
 });
 
-// GET - Récupérer le rôle de l'utilisateur connecté
+// GET - Récupérer le rôle de l'User connecté
 app.get('/api/user-role', authMiddleware, (req, res) => {
   const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   // Si le rôle est dans le token JWT, le retourner directement
   if (tokenRole) {
@@ -571,13 +576,16 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
 =======
   const query = 'SELECT role FROM Utilisateur WHERE id = ?';
 >>>>>>> 6d096f5cc26902c6828d5e60674eed8974b9af3d
+=======
+  const query = 'SELECT role FROM User WHERE id = ?';
+>>>>>>> 292e2b155887f62bbb47a219ad5c0e092edee1ef
   db.query(query, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+      return res.status(404).json({ success: false, message: 'User introuvable' });
     }
 
     const dbRole = (results[0].role || ROLES.USER).toLowerCase().trim();
@@ -585,20 +593,20 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
   });
 }); 
 
-// GET - Vérifier la connexion de l'utilisateur
+// GET - Vérifier la connexion de l'User
 app.get('/api/check-auth', authMiddleware, (req, res) => {
   const userId = req.user.sub;
   const login = req.user.login;
   const role = req.user.role;
 
-  const query = 'SELECT id, login, mail, role FROM Utilisateur WHERE id = ?';
+  const query = 'SELECT id, login, mail, role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+      return res.status(404).json({ success: false, message: 'User introuvable' });
     }
 
     const user = results[0];
@@ -781,13 +789,13 @@ function isAdminMiddleware(req, res, next) {
   }
 
   if (!userId) {
-    return res.status(401).json({ success: false, message: 'Utilisateur non authentifié' });
+    return res.status(401).json({ success: false, message: 'User non authentifié' });
   }
 
-  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
+  const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err || results.length === 0) {
-      return res.status(403).json({ success: false, message: 'Utilisateur introuvable' });
+      return res.status(403).json({ success: false, message: 'User introuvable' });
     }
 
     const user = results[0];
@@ -913,13 +921,13 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
 // 🔧 ROUTES ADMIN
 // ========================================
 
-// GET - Liste de tous les utilisateurs (Admin uniquement)
+// GET - Liste de tous les Users (Admin uniquement)
 app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
-  const query = 'SELECT id, login, mail, role FROM Utilisateur ORDER BY login ASC';
+  const query = 'SELECT id, login, mail, role FROM User ORDER BY login ASC';
   
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur récupération utilisateurs:', err);
+      console.error('Erreur récupération Users:', err);
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
 
@@ -931,7 +939,7 @@ app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
   });
 });
 
-// PUT - Modifier le rôle d'un utilisateur (Admin uniquement)
+// PUT - Modifier le rôle d'un User (Admin uniquement)
 app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
   const { userId } = req.params;
   const { newRole } = req.body;
@@ -948,7 +956,7 @@ app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req
     }
 
     if (results.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+      return res.status(404).json({ success: false, message: 'User non trouvé' });
     }
 
     res.json({ success: true, message: 'Rôle mis à jour avec succès' });
