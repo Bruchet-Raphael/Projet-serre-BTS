@@ -223,17 +223,9 @@ app.post('/api/inscription', (req, res) => {
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+      // 🔥 CORRECTION : Une seule requête propre !
       const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword, ROLES.USER], (err, results) => {
-=======
-      const insertQuery = 'INSERT INTO Utilisateur (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
-=======
-      const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
->>>>>>> 292e2b155887f62bbb47a219ad5c0e092edee1ef
-      db.query(insertQuery, [nom, prenom, email, username, hashedPassword, 'user'], (err, results) => {
->>>>>>> 6d096f5cc26902c6828d5e60674eed8974b9af3d
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
         const userId = results.insertId;
@@ -564,21 +556,13 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
   const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   // Si le rôle est dans le token JWT, le retourner directement
   if (tokenRole) {
     return res.json({ success: true, role: tokenRole });
   }
 
-  // Fallback: Récupérer le rôle depuis la BD (pour compatibilité)
+  // 🔥 CORRECTION : Une seule requête query
   const query = 'SELECT role FROM User WHERE id = ?';
-=======
-  const query = 'SELECT role FROM Utilisateur WHERE id = ?';
->>>>>>> 6d096f5cc26902c6828d5e60674eed8974b9af3d
-=======
-  const query = 'SELECT role FROM User WHERE id = ?';
->>>>>>> 292e2b155887f62bbb47a219ad5c0e092edee1ef
   db.query(query, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
