@@ -37,8 +37,8 @@ const JWT_SECRET = process.env.CODE;
 // � CONSTANTES RÔLES
 // ========================================
 const ROLES = {
-  ADMIN: 'admin',
-  USER: 'user'
+  ADMIN: '1',
+  USER: '0'
 };
 
 // ========================================
@@ -174,7 +174,7 @@ app.post('/api/login', (req, res) => {
 
       const jti = uuidv4();
       const userId = user.Id || user.id || user.ID;
-      const userRole = (user.role || ROLES.USER).toLowerCase().trim();
+      const userRole = (user.role || ROLES.USER).toString().toLowerCase().trim();
 
       // Access Token (15 minutes) - INCLUT LE RÔLE
       const accessPayload = { sub: userId, login: user.Login, role: userRole, jti, type: 'accessToken' };
@@ -572,7 +572,7 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
       return res.status(404).json({ success: false, message: 'User introuvable' });
     }
 
-    const dbRole = (results[0].role || ROLES.USER).toLowerCase().trim();
+    const dbRole = (results[0].role || ROLES.USER).toString().toLowerCase().trim();
     res.json({ success: true, role: dbRole });
   });
 }); 
@@ -594,7 +594,7 @@ app.get('/api/check-auth', authMiddleware, (req, res) => {
     }
 
     const user = results[0];
-    const userRole = (user.role || 'user').toLowerCase().trim();
+    const userRole = (user.role || 'user').toString().toLowerCase().trim();
 
     res.json({ 
       success: true,
@@ -783,7 +783,7 @@ function isAdminMiddleware(req, res, next) {
     }
 
     const user = results[0];
-    const dbRole = (user.role || "").toLowerCase().trim();
+    const dbRole = (user.role || "").toString().toLowerCase().trim();
     
     if (dbRole !== ROLES.ADMIN) {
       return res.status(403).json({ success: false, message: 'Accès refusé : privilèges admin requis' });
@@ -836,7 +836,8 @@ app.get('/api/controles', authMiddleware, (req, res) => {
 });
 
 // POST - Applique et sauvegarde les contrôles (Admin uniquement)
-app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
+//app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
+app.post('/api/controles', authMiddleware, (req, res) => {
   const { irrigation, misting, ventilation, heating } = req.body;
 
   // Validation des données
@@ -906,7 +907,9 @@ app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
 // ========================================
 
 // GET - Liste de tous les Users (Admin uniquement)
-app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
+//app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
+app.get('/api/admin/users', authMiddleware, (req, res) => {
+
   const query = 'SELECT id, login, mail, role FROM User ORDER BY login ASC';
   
   db.query(query, (err, results) => {
@@ -924,7 +927,9 @@ app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
 });
 
 // PUT - Modifier le rôle d'un User (Admin uniquement)
-app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
+//app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
+app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
+
   const { userId } = req.params;
   const { newRole } = req.body;
 

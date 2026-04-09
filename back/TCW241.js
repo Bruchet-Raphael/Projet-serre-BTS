@@ -1,4 +1,3 @@
-//const SensorData = require('./SensorData');
 class TCW241 {
     constructor() {
         this.temperature = null;
