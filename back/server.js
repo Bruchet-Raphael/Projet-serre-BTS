@@ -55,7 +55,7 @@ if (!fs.existsSync(configFile)) {
     console.log("📄 Fichier config_regulation.json créé avec succès !");
 }
 // ========================================
-//  CONSTANTES RÔLES
+// � CONSTANTES RÔLES
 // ========================================
 const ROLES = {
   ADMIN: '1',
@@ -63,7 +63,7 @@ const ROLES = {
 };
 
 // ========================================
-// 🔌 Connexion MySQL
+// �🔌 Connexion MySQL
 // ========================================
 
 const db = mysql.createConnection({
@@ -86,16 +86,18 @@ db.connect(err => {
 // ========================================
 
 function extractToken(req) {
+  // Cherche d'abord dans le cookie HttpOnly accessToken
   if (req.cookies && req.cookies.accessToken) {
     return req.cookies.accessToken;
   }
+  // Sinon cherche dans l'header Authorization (pour compatibilité)
   const authHeader = req.headers.authorization || '';
   if (!authHeader.startsWith('Bearer ')) return null;
   return authHeader.slice(7);
 }
 
 const revokedTokens = new Set();
-const refreshTokens = new Map();
+const refreshTokens = new Map(); // Stockage des refresh tokens: refreshTokenId -> { userId, jti, expiresAt }
 
 function revokeToken(jti) { 
   revokedTokens.add(jti); 
@@ -116,10 +118,13 @@ function revokeRefreshToken(refreshTokenId) {
 function isValidRefreshToken(refreshTokenId) {
   const token = refreshTokens.get(refreshTokenId);
   if (!token) return false;
+  
+  // Vérifier si le token n'a pas expiré
   if (token.expiresAt < Date.now()) {
     refreshTokens.delete(refreshTokenId);
     return false;
   }
+  
   return true;
 }
 
@@ -143,6 +148,7 @@ function authMiddleware(req, res, next) {
 // 🔐 Routes LOGIN / INSCRIPTION
 // ========================================
 
+// GET - Vérifier si l'User est connecté (sans auth requise pour tester)
 app.get('/api/verify-connection', (req, res) => {
   const token = extractToken(req);
   
@@ -191,22 +197,32 @@ app.post('/api/login', (req, res) => {
       const userId = user.Id || user.id || user.ID;
       const userRole = (user.role || ROLES.USER).toString().toLowerCase().trim();
 
+      // Access Token (15 minutes) - INCLUT LE RÔLE
       const accessPayload = { sub: userId, login: user.Login, role: userRole, jti, type: 'accessToken' };
       const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
+      // Refresh Token (7 jours)
       const refreshTokenId = uuidv4();
       const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
       const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
 
+      // Stocker le refresh token
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
       storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
+      // Envoyer les tokens dans des cookies HttpOnly
       res.cookie('accessToken', accessToken, {
-        httpOnly: true, secure: false, sameSite: 'Lax', maxAge: 15 * 60 * 1000
+        httpOnly: true,
+        secure: false, // false pour développement HTTP, true pour HTTPS production
+        sameSite: 'Lax',
+        maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
       });
 
       res.cookie('refreshToken', refreshToken, {
-        httpOnly: true, secure: false, sameSite: 'Lax', maxAge: 7 * 24 * 60 * 60 * 1000
+        httpOnly: true,
+        secure: false, // false pour développement HTTP, true pour HTTPS production
+        sameSite: 'Lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
       });
 
       return res.json({ success: true, message: 'Connexion réussie', role: userRole });
@@ -228,6 +244,7 @@ app.post('/api/inscription', (req, res) => {
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
+      // 🔥 CORRECTION : Une seule requête propre !
       const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword, ROLES.USER], (err, results) => {
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -235,22 +252,32 @@ app.post('/api/inscription', (req, res) => {
         const userId = results.insertId;
         const jti = uuidv4();
 
+        // Access Token (15 minutes) - INCLUT LE RÔLE
         const accessPayload = { sub: userId, login: username, role: ROLES.USER, jti, type: 'accessToken' };
         const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
+        // Refresh Token (7 jours)
         const refreshTokenId = uuidv4();
         const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
         const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
 
+        // Stocker le refresh token
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
         storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
+        // Envoyer les tokens dans des cookies HttpOnly
         res.cookie('accessToken', accessToken, {
-          httpOnly: true, secure: false, sameSite: 'Lax', maxAge: 15 * 60 * 1000
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+          maxAge: 15 * 60 * 1000
         });
 
         res.cookie('refreshToken', refreshToken, {
-          httpOnly: true, secure: false, sameSite: 'Lax', maxAge: 7 * 24 * 60 * 60 * 1000
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.json({ success: true, message: 'Inscription réussie' });
@@ -259,36 +286,62 @@ app.post('/api/inscription', (req, res) => {
   });
 });
 
+// POST - Logout (Déconnexion)
 app.post('/api/logout', authMiddleware, (req, res) => {
   const jti = req.user?.jti;
-  if (jti) revokeToken(jti);
+  
+  if (jti) {
+    // Révoquer le token en ajoutant son jti à la liste des tokens révoqués
+    revokeToken(jti);
+  }
 
-  res.clearCookie('accessToken', { httpOnly: true, secure: false, sameSite: 'Lax' });
-  res.clearCookie('refreshToken', { httpOnly: true, secure: false, sameSite: 'Lax' });
+  // Supprimer les cookies
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: false, // false pour développement HTTP, true pour HTTPS production
+    sameSite: 'Lax'
+  });
+  
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: false, // false pour développement HTTP, true pour HTTPS production
+    sameSite: 'Lax'
+  });
 
   return res.json({ success: true, message: 'Déconnexion réussie' });
 });
 
+// POST - Refresh Token (Obtenir un nouveau access token)
 app.post('/api/refresh-token', (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  if (!refreshToken) return res.status(401).json({ success: false, message: 'Refresh token manquant' });
+  
+  if (!refreshToken) {
+    return res.status(401).json({ success: false, message: 'Refresh token manquant' });
+  }
 
   try {
     const payload = jwt.verify(refreshToken, JWT_SECRET);
-    if (payload.type !== 'refreshToken') return res.status(401).json({ success: false, message: 'Token invalide' });
+    
+    if (payload.type !== 'refreshToken') {
+      return res.status(401).json({ success: false, message: 'Token invalide' });
+    }
 
     const refreshTokenId = payload.refreshTokenId;
     if (!isValidRefreshToken(refreshTokenId)) {
       return res.status(401).json({ success: false, message: 'Refresh token invalide ou expiré' });
     }
 
+    // Générer un nouvel access token
     const userId = payload.sub;
     const jti = uuidv4();
     const newAccessPayload = { sub: userId, jti, type: 'accessToken' };
     const newAccessToken = jwt.sign(newAccessPayload, JWT_SECRET, { expiresIn: '15m' });
 
     res.cookie('accessToken', newAccessToken, {
-      httpOnly: true, secure: false, sameSite: 'Lax', maxAge: 15 * 60 * 1000
+      httpOnly: true,
+      secure: false, // false pour développement HTTP, true pour HTTPS production
+      sameSite: 'Lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     return res.json({ success: true, message: 'Access token rafraîchi' });
@@ -298,26 +351,35 @@ app.post('/api/refresh-token', (req, res) => {
   }
 })
 
+
 // ========================================
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
-const poseidon = new IOPoseidon('172.29.254.100');
+const poseidon = new IOPoseidon('172.29.254.100'); // IP Simulateur
 
+// --- [AJOUT ETUDIANT 2] Variables d'écoute de l'IHM et des capteurs ---
 let modeArrosageGlobal = 'inactive'; 
-let seuilArrosageGlobal = 30;
-let humiditeSolGlobale = 50;  
+let seuilArrosageGlobal = 30; // Valeur du curseur (en %)
+let humiditeSolGlobale = 50;  // Humidité de la terre lue par le TCW241
+// ----------------------------------------------------------------------
 
+// Supervision automatique en arrière-plan
 async function startWaterSupervision() {
   try {
     await poseidon.connect();
     
+    // Boucle infinie toutes les 2 secondes
 setInterval(async () => {
       try {
+          // 1. Lire les capteurs
           await poseidon.updateAll();
+          
+          // 2. Exécuter l'algorithme Réseau
           await poseidon.gererChoixReseau();
           
-          let besoinEau = false; 
+          // --- L'INTELLIGENCE DU PILOTAGE IHM (Manuel & Auto) ---
+          let besoinEau = false; // Par défaut, pas besoin d'eau
 
           if (modeArrosageGlobal === 'active') {
               besoinEau = true;
@@ -328,9 +390,11 @@ setInterval(async () => {
               }
           }
           
+          // On envoie la décision à la sécurité matérielle
           await poseidon.gererPompe(besoinEau);
       } catch (errLoop) {
-          console.error("Erreur Poseidon :", errLoop.message);
+          console.error("Erreur de communication avec le Poseidon :", errLoop.message);
+          // C'est ici qu'on mettra plus tard la sécurité "pompe à OFF si perte réseau"
       }
     }, 2000);
     
@@ -339,7 +403,8 @@ setInterval(async () => {
     console.error("Erreur Supervision Poseidon:", err.message);
   }
 }
-startWaterSupervision(); 
+startWaterSupervision(); // Lancement au démarrage
+
 
 // ========================================
 // 🌡️ GESTION TCW241 (ETUDIANT 1)
@@ -367,9 +432,11 @@ async function getTCWData() {
         tcw.setHumidites(h1, h2, h3);
         tcw.setHumAir(humair);
 
+        // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
         if (tcw.humiditeMoyenne !== null) {
             humiditeSolGlobale = tcw.humiditeMoyenne;
         }
+        // ----------------------------------------------------------------------------
 
         socket.end();
 
@@ -387,20 +454,31 @@ async function getTCWData() {
       } catch (err) {
         socket.end();
         resolve({
-          temperature: null, h1: null, h2: null, h3: null,
-          humiditeSol: null, humair: null, relays: null
+          temperature: null,
+          h1: null,
+          h2: null,
+          h3: null,
+          humiditeSol: null,
+          humair: null,
+          relays: null
         });
       }
     });
 
     socket.on('error', () => {
       resolve({
-        temperature: null, h1: null, h2: null, h3: null,
-        humiditeSol: null, relays: null
+        temperature: null,
+        h1: null,
+        h2: null,
+        h3: null,
+        humiditeSol: null,
+        relays: null
       });
     });
   });
 }
+
+
 
 // ========================================
 // 🌍 EXPRESS STATIC
@@ -419,12 +497,26 @@ app.get('/', (req, res) => {
 app.get('/api/historique-24h', authMiddleware, (req, res) => {
   try {
     const sql = `
-      SELECT id, temperature, h1, h2, h3, humidite_sol, humidite_air, conso_total, conso_pluie, date
-      FROM Capteur WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY date ASC
+      SELECT
+          id,
+          temperature,
+          h1,
+          h2,
+          h3,
+          humidite_sol,
+          humidite_air,
+          conso_total,
+          conso_pluie,
+          date
+      FROM Capteur
+      WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      ORDER BY date ASC
       `;
 
     db.query(sql, (err, results) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
 
       const historique = results.map(row => ({
         timestamp: new Date(row.timestamp).toLocaleTimeString('fr-FR'),
@@ -436,12 +528,18 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
         humAir: parseFloat(row.humidite_air)
       }));
 
-      res.json({ success: true, data: historique, count: historique.length });
+      res.json({
+        success: true,
+        data: historique,
+        count: historique.length
+      });
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
 
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
@@ -453,6 +551,7 @@ app.get('/api/info', authMiddleware, async (req, res) => {
 
     const monitor = response.data?.Monitor || {};
     const tcwData = TCW241.fromMonitor(monitor);
+
     TCW241.store.push(tcwData);
 
     const waterData = {
@@ -462,42 +561,71 @@ app.get('/api/info', authMiddleware, async (req, res) => {
         reseauPluie: (poseidon.getTemperature() >= 1 && poseidon.isCuvePleine())
     };
 
-    res.json({ success: true, ...tcwData, ...waterData });
+    res.json({ 
+        success: true, 
+        ...tcwData, 
+        ...waterData 
+    });
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// GET - Récupérer le rôle de l'User connecté
 app.get('/api/user-role', authMiddleware, (req, res) => {
   const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
-  if (tokenRole) return res.json({ success: true, role: tokenRole });
+  // Si le rôle est dans le token JWT, le retourner directement
+  if (tokenRole) {
+    return res.json({ success: true, role: tokenRole });
+  }
 
+  // 🔥 CORRECTION : Une seule requête query
   const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.length === 0) return res.status(404).json({ success: false, message: 'User introuvable' });
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: 'User introuvable' });
+    }
 
     const dbRole = (results[0].role || ROLES.USER).toString().toLowerCase().trim();
     res.json({ success: true, role: dbRole });
   });
 }); 
 
+// GET - Vérifier la connexion de l'User
 app.get('/api/check-auth', authMiddleware, (req, res) => {
   const userId = req.user.sub;
+  const login = req.user.login;
+  const role = req.user.role;
+
   const query = 'SELECT id, login, mail, role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.length === 0) return res.status(404).json({ success: false, message: 'User introuvable' });
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: 'User introuvable' });
+    }
 
     const user = results[0];
     const userRole = (user.role || 'user').toString().toLowerCase().trim();
 
     res.json({ 
-      success: true, authenticated: true,
-      user: { id: user.id, login: user.login, email: user.mail, role: userRole }
+      success: true,
+      authenticated: true,
+      user: {
+        id: user.id,
+        login: user.login,
+        email: user.mail,
+        role: userRole
+      }
     });
   });
 });
@@ -508,6 +636,7 @@ async function readTCW241() {
         const client = new Modbus.client.TCP(socket);
 
         socket.connect({ host: process.env.serverIP, port: process.env.portMod });
+
         socket.on('connect', async () => {
             try {
                 const tcw = new TCW241();
@@ -522,17 +651,21 @@ async function readTCW241() {
                 tcw.setHumidites(h1, h2, h3);
                 tcw.setHumAir(humair);
 
+                // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
                 if (tcw.humiditeMoyenne !== null) {
                     humiditeSolGlobale = tcw.humiditeMoyenne;
                 }
+                // ----------------------------------------------------------------------------
 
                 socket.end();
                 resolve(tcw);
+
             } catch (err) {
                 socket.end();
                 reject(err);
             }
         });
+
         socket.on('error', reject);
     });
 }
@@ -540,31 +673,53 @@ async function readTCW241() {
 async function saveLoop() {
     try {
         const tcw = await readTCW241();
-        const sql = `INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
-        db.query(sql, [tcw.conso_pluie, tcw.h1, tcw.h2, tcw.h3, tcw.humair, tcw.humiditeMoyenne, tcw.temperature, tcw.conso_total]);
+        const sql = `
+                INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+              `;
+
+        db.query(sql, [
+            tcw.conso_pluie,
+            tcw.h1,
+            tcw.h2,
+            tcw.h3,
+            tcw.humair,
+            tcw.humiditeMoyenne,
+            tcw.temperature,
+            tcw.conso_total,
+        ]);
+
     } catch (err) {
         console.error("Erreur boucle BDD :", err.message);
     }
 }
 
+
+
 app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   const num = parseInt(req.params.numRelais, 10);
-  if (![1, 2, 3, 4].includes(num)) return res.status(400).json({ success: false, message: "Relais invalide" });
+
+  if (![1, 2, 3, 4].includes(num)) {
+    return res.status(400).json({ success: false, message: "Relais invalide (1 à 4)" });
+  }
 
   const socket = new net.Socket();
   const client = new Modbus.client.TCP(socket);
 
   socket.connect({ host: process.env.serverIP, port: process.env.portMod });
+
   socket.on('connect', async () => {
     try {
       const tcw = new TCW241();
+
       if (num === 1) await tcw.setRelay1(client);
       if (num === 2) await tcw.setRelay2(client);
       if (num === 3) await tcw.setRelay3(client);
       if (num === 4) await tcw.setRelay4(client);
 
       const relays = await tcw.getRelaysState(client);
+
       socket.end();
       res.json({ success: true, relays });
 
@@ -573,7 +728,10 @@ app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
       res.status(500).json({ success: false, error: err.message });
     }
   });
-  socket.on('error', err => res.status(500).json({ success: false, error: err.message }));
+
+  socket.on('error', err => {
+    res.status(500).json({ success: false, error: err.message });
+  });
 });
 
 async function regulateLoop() {
@@ -585,9 +743,11 @@ async function regulateLoop() {
     socket.on('connect', async () => {
         try {
             const tcw = new TCW241();
+
+            // 1. Lecture des capteurs
             const data = await tcw.getAll(client);
 
-            // LECTURE DE LA CONSIGNE DEPUIS LE FICHIER JSON
+            // 2. LECTURE DE LA CONSIGNE DEPUIS LE FICHIER JSON
             fs.readFile(configFile, 'utf8', async (err, fileData) => {
                 if (err) {
                     console.error('Erreur de lecture du fichier de config :', err);
@@ -596,8 +756,14 @@ async function regulateLoop() {
                 }
 
                 try {
+                    // On transforme le texte du fichier en objet Javascript
                     const consigne = JSON.parse(fileData);
+                    
+                    // console.log('Consigne utilisée (depuis fichier) :', consigne); // Décommente pour voir dans les logs
+
+                    // 3. Exécution de l'algorithme de régulation
                     await tcw.regulate(client, consigne);
+
                     socket.end();
                 } catch (parseErr) {
                     console.error('Erreur de format dans config_regulation.json :', parseErr);
@@ -611,24 +777,49 @@ async function regulateLoop() {
     });
 }
 
+// ========================================
+// 🔐 Admin Middleware
+// ========================================
+
 function isAdminMiddleware(req, res, next) {
   const userId = req.user?.sub;
   const tokenRole = req.user?.role;
 
-  if (tokenRole === ROLES.ADMIN) return next();
-  if (!userId) return res.status(401).json({ success: false, message: 'User non authentifié' });
+  // Vérification du rôle depuis le token (rapide) - PRIORITÉ
+  if (tokenRole === ROLES.ADMIN) {
+    return next();
+  }
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'User non authentifié' });
+  }
 
   const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
-    if (err || results.length === 0) return res.status(403).json({ success: false, message: 'User introuvable' });
+    if (err || results.length === 0) {
+      return res.status(403).json({ success: false, message: 'User introuvable' });
+    }
 
-    const dbRole = (results[0].role || "").toString().toLowerCase().trim();
-    if (dbRole !== ROLES.ADMIN) return res.status(403).json({ success: false, message: 'Accès refusé' });
+    const user = results[0];
+    const dbRole = (user.role || "").toString().toLowerCase().trim();
+    
+    if (dbRole !== ROLES.ADMIN) {
+      return res.status(403).json({ success: false, message: 'Accès refusé : privilèges admin requis' });
+    }
+
     next();
   });
 }
 
+// ========================================
+// 🔐 User Middleware (Non-Admin only)
+// ========================================
+
 function isUserMiddleware(req, res, next) {
+  const tokenRole = req.user?.role;
+  
+  // Empêcher les admins d'accéder aux routes "user only" (si jamais utile)
+  // Pour l'instant, ce middleware accepte tout utilisateur authentifié
   next();
 }
 
@@ -636,42 +827,83 @@ function isUserMiddleware(req, res, next) {
 // 🎛️ ROUTES CONTRÔLES (Ventilation, Chauffage, etc.)
 // ========================================
 
+// GET - Récupérer les derniers contrôles appliqués
 app.get('/api/controles', authMiddleware, (req, res) => {
-  const query = `SELECT * FROM controles ORDER BY created_at DESC LIMIT 1`;
+  const query = `
+    SELECT id, irrigation_mode, irrigation_threshold, 
+           misting_mode, misting_intensity,
+           ventilation_mode, ventilation_duration,
+           heating_mode, heating_target,
+           created_at
+    FROM controles
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+
   db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.length === 0) return res.json({ success: true, controles: null, message: 'Aucun contrôle enregistré' });
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: true, controles: null, message: 'Aucun contrôle enregistré' });
+    }
+
     res.json({ success: true, controles: results[0] });
   });
 });
 
+// POST - Applique et sauvegarde les contrôles (Admin uniquement)
+//app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
 app.post('/api/controles', authMiddleware, (req, res) => {
   const { irrigation, misting, ventilation, heating } = req.body;
 
+  // Validation des données
   if (!irrigation || !misting || !ventilation || !heating) {
     return res.status(400).json({ success: false, message: 'Paramètres incomplets' });
   }
 
+  // --- [AJOUT ETUDIANT 2] On capture l'état et le seuil pour le Poseidon ---
   modeArrosageGlobal = irrigation.mode;
-  seuilArrosageGlobal = irrigation.threshold || 30;
+  seuilArrosageGlobal = irrigation.threshold || 30; // 30 par défaut si non fourni
+  // -------------------------------------------------------------------------
 
+  // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
   if (ventilation.mode === 'active' && heating.mode === 'active') {
-    return res.status(400).json({ success: false, message: 'Le chauffage ne peut pas être actif si la ventilation est active' });
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Le chauffage ne peut pas être actif si la ventilation est active' 
+    });
   }
 
+  // Durée de ventilation : seulement si mode = 'active', max 6h
   if (ventilation.mode === 'active' && (!ventilation.duration || ventilation.duration > 6 || ventilation.duration < 1)) {
-    return res.status(400).json({ success: false, message: 'Durée ventilation invalide (1-6h)' });
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Durée ventilation invalide (1-6h)' 
+    });
   }
 
   const query = `
     INSERT INTO controles 
-    (irrigation_mode, irrigation_threshold, misting_mode, misting_intensity, ventilation_mode, ventilation_duration, heating_mode, heating_target, created_at, updated_by)
+    (irrigation_mode, irrigation_threshold, 
+     misting_mode, misting_intensity,
+     ventilation_mode, ventilation_duration,
+     heating_mode, heating_target,
+     created_at, updated_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
   `;
 
   const values = [
-    irrigation.mode, irrigation.threshold || null, misting.mode, misting.intensity || null,
-    ventilation.mode, ventilation.duration || null, heating.mode, heating.target || null, req.user.sub
+    irrigation.mode,
+    irrigation.threshold || null,
+    misting.mode,
+    misting.intensity || null,
+    ventilation.mode,
+    ventilation.duration || null,
+    heating.mode,
+    heating.target || null,
+    req.user.sub
   ];
 
   db.query(query, values, (err, results) => {
@@ -679,40 +911,12 @@ app.post('/api/controles', authMiddleware, (req, res) => {
       console.error('Erreur insert controles:', err);
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
-    res.json({ success: true, message: 'Contrôles appliqués et sauvegardés', controleId: results.insertId });
-  });
-});
 
-// ========================================
-// 📝 GESTION DE LA CONSIGNE (JSON) - NOUVEAU
-// ========================================
-
-app.get('/api/consigne', authMiddleware, (req, res) => {
-  fs.readFile(configFile, 'utf8', (err, data) => {
-      if (err) return res.status(500).json({ success: false, message: 'Erreur lecture config' });
-      try {
-          res.json({ success: true, config: JSON.parse(data) });
-      } catch (e) {
-          res.status(500).json({ success: false, message: 'Erreur format fichier' });
-      }
-  });
-});
-
-app.post('/api/consigne', authMiddleware, (req, res) => {
-  const nouvellesConsignes = req.body;
-  fs.readFile(configFile, 'utf8', (err, data) => {
-      if (err) return res.status(500).json({ success: false, message: 'Erreur lecture config' });
-      try {
-          const currentConfig = JSON.parse(data);
-          const updatedConfig = { ...currentConfig, ...nouvellesConsignes };
-
-          fs.writeFile(configFile, JSON.stringify(updatedConfig, null, 4), (writeErr) => {
-              if (writeErr) return res.status(500).json({ success: false, message: 'Erreur écriture config' });
-              res.json({ success: true, message: 'Consignes mises à jour avec succès', config: updatedConfig });
-          });
-      } catch (e) {
-          res.status(500).json({ success: false, message: 'Erreur format fichier' });
-      }
+    res.json({ 
+      success: true, 
+      message: 'Contrôles appliqués et sauvegardés',
+      controleId: results.insertId
+    });
   });
 });
 
@@ -720,15 +924,30 @@ app.post('/api/consigne', authMiddleware, (req, res) => {
 // 🔧 ROUTES ADMIN
 // ========================================
 
+// GET - Liste de tous les Users (Admin uniquement)
+//app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
 app.get('/api/admin/users', authMiddleware, (req, res) => {
+
   const query = 'SELECT id, login, mail, role FROM User ORDER BY login ASC';
+  
   db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    res.json({ success: true, users: results, count: results.length });
+    if (err) {
+      console.error('Erreur récupération Users:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    res.json({ 
+      success: true, 
+      users: results,
+      count: results.length
+    });
   });
 });
 
+// PUT - Modifier le rôle d'un User (Admin uniquement)
+//app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
 app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
+
   const { userId } = req.params;
   const { newRole } = req.body;
 
@@ -738,8 +957,15 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
 
   const query = 'UPDATE User SET role = ? WHERE id = ?';
   db.query(query, [newRole, userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
-    if (results.affectedRows === 0) return res.status(404).json({ success: false, message: 'User non trouvé' });
+    if (err) {
+      console.error('Erreur mise à jour rôle:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User non trouvé' });
+    }
+
     res.json({ success: true, message: 'Rôle mis à jour avec succès' });
   });
 });
@@ -754,11 +980,23 @@ app.get('/status', authMiddleware,async (req, res) => {
 
     const monitor = response.data?.Monitor || {};
     const sensorData = TCW241.fromMonitor(monitor);
+
     TCW241.store.push(sensorData);
-    
-    res.status(200).json({ success: true, source: process.env.TARGET_URL, data: sensorData });
+
+    console.log('SensorData:', sensorData);
+
+    res.status(200).json({
+      success: true,
+      source: process.env.TARGET_URL,
+      data: sensorData
+    });
   } catch (error) {
-    res.status(502).json({ success: false, message: "Impossible de récupérer status.json", error: error.message });
+    console.error('Erreur requête:', error.message);
+    res.status(502).json({
+      success: false,
+      message: "Impossible de récupérer status.json",
+      error: error.message
+    });
   }
 });
 
