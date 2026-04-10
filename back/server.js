@@ -370,31 +370,29 @@ async function startWaterSupervision() {
     await poseidon.connect();
     
     // Boucle infinie toutes les 2 secondes
-setInterval(async () => {
+    setInterval(async () => {
       try {
-          // 1. Lire les capteurs
           await poseidon.updateAll();
+          await poseidon.gererChoixReseau(); // Gestion de la vanne Pluie/Ville
           
-          // 2. Exécuter l'algorithme Réseau
-          await poseidon.gererChoixReseau();
-          
-          // --- L'INTELLIGENCE DU PILOTAGE IHM (Manuel & Auto) ---
-          let besoinEau = false; // Par défaut, pas besoin d'eau
+          let besoinEau = false; // Par défaut, la pompe est au repos
 
+          // Logique IHM
           if (modeArrosageGlobal === 'active') {
-              besoinEau = true;
+              besoinEau = true; // Marche forcée
           } 
           else if (modeArrosageGlobal === 'auto') {
+              // Régulation selon le seuil du site web
               if (humiditeSolGlobale < seuilArrosageGlobal) {
-                  besoinEau = true;
+                  besoinEau = true; 
               }
           }
           
-          // On envoie la décision à la sécurité matérielle
+          // Envoi de la décision à la sécurité matérielle (Fail-Safe)
           await poseidon.gererPompe(besoinEau);
+          
       } catch (errLoop) {
-          console.error("Erreur de communication avec le Poseidon :", errLoop.message);
-          // C'est ici qu'on mettra plus tard la sécurité "pompe à OFF si perte réseau"
+          console.error("Erreur Poseidon :", errLoop.message);
       }
     }, 2000);
     
@@ -403,7 +401,7 @@ setInterval(async () => {
     console.error("Erreur Supervision Poseidon:", err.message);
   }
 }
-startWaterSupervision(); // Lancement au démarrage
+startWaterSupervision(); // Lancement
 
 
 // ========================================
@@ -866,6 +864,7 @@ app.post('/api/controles', authMiddleware, (req, res) => {
   // --- [AJOUT ETUDIANT 2] On capture l'état et le seuil pour le Poseidon ---
   modeArrosageGlobal = irrigation.mode;
   seuilArrosageGlobal = irrigation.threshold || 30; // 30 par défaut si non fourni
+  console.log(`[IHM] Arrosage -> Mode: ${modeArrosageGlobal}, Seuil: ${seuilArrosageGlobal}%`);
   // -------------------------------------------------------------------------
 
   // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
