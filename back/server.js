@@ -56,6 +56,13 @@ if (!fs.existsSync(configFile)) {
 }
 
 // ========================================
+// 🌊 VARIABLES GLOBALES (IHM & Capteurs)
+// ========================================
+let modeArrosageGlobal = 'inactive'; 
+let seuilArrosageGlobal = 30; 
+let humiditeSolGlobale = 50;
+
+// ========================================
 // 📄 FICHIER DE CONFIGURATION (Contrôles IHM)
 // ========================================
 const controlesFile = path.join(__dirname, 'controles.json');
@@ -350,10 +357,6 @@ app.post('/api/refresh-token', (req, res) => {
 // ========================================
 
 const poseidon = new IOPoseidon('172.29.254.100'); // IP Simulateur
-
-let modeArrosageGlobal = 'inactive'; 
-let seuilArrosageGlobal = 30; // Valeur du curseur (en %)
-let humiditeSolGlobale = 50;  // Humidité de la terre lue par le TCW241
 
 async function startWaterSupervision() {
   try {
