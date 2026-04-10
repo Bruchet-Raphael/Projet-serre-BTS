@@ -54,8 +54,30 @@ if (!fs.existsSync(configFile)) {
     fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 4));
     console.log("📄 Fichier config_regulation.json créé avec succès !");
 }
+
 // ========================================
-// � CONSTANTES RÔLES
+// 📄 FICHIER DE CONFIGURATION (Contrôles IHM)
+// ========================================
+const controlesFile = path.join(__dirname, 'controles.json');
+
+if (!fs.existsSync(controlesFile)) {
+    const defaultControles = {
+        irrigation: { mode: 'inactive', threshold: 30 },
+        misting: { mode: 'inactive', intensity: 50 },
+        ventilation: { mode: 'inactive', duration: 3 },
+        heating: { mode: 'inactive', target: 20 }
+    };
+    fs.writeFileSync(controlesFile, JSON.stringify(defaultControles, null, 4));
+    console.log("📄 Fichier controles.json créé avec succès !");
+} else {
+    // Si le fichier existe au démarrage, on recharge les variables globales pour la pompe !
+    const saved = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+    modeArrosageGlobal = saved.irrigation.mode;
+    seuilArrosageGlobal = saved.irrigation.threshold;
+}
+
+// ========================================
+// 🛡️ CONSTANTES RÔLES
 // ========================================
 const ROLES = {
   ADMIN: '1',
@@ -63,7 +85,7 @@ const ROLES = {
 };
 
 // ========================================
-// �🔌 Connexion MySQL
+// 🔌 Connexion MySQL
 // ========================================
 
 const db = mysql.createConnection({
@@ -86,18 +108,16 @@ db.connect(err => {
 // ========================================
 
 function extractToken(req) {
-  // Cherche d'abord dans le cookie HttpOnly accessToken
   if (req.cookies && req.cookies.accessToken) {
     return req.cookies.accessToken;
   }
-  // Sinon cherche dans l'header Authorization (pour compatibilité)
   const authHeader = req.headers.authorization || '';
   if (!authHeader.startsWith('Bearer ')) return null;
   return authHeader.slice(7);
 }
 
 const revokedTokens = new Set();
-const refreshTokens = new Map(); // Stockage des refresh tokens: refreshTokenId -> { userId, jti, expiresAt }
+const refreshTokens = new Map(); 
 
 function revokeToken(jti) { 
   revokedTokens.add(jti); 
@@ -119,12 +139,10 @@ function isValidRefreshToken(refreshTokenId) {
   const token = refreshTokens.get(refreshTokenId);
   if (!token) return false;
   
-  // Vérifier si le token n'a pas expiré
   if (token.expiresAt < Date.now()) {
     refreshTokens.delete(refreshTokenId);
     return false;
   }
-  
   return true;
 }
 
@@ -148,7 +166,6 @@ function authMiddleware(req, res, next) {
 // 🔐 Routes LOGIN / INSCRIPTION
 // ========================================
 
-// GET - Vérifier si l'User est connecté (sans auth requise pour tester)
 app.get('/api/verify-connection', (req, res) => {
   const token = extractToken(req);
   
@@ -197,32 +214,28 @@ app.post('/api/login', (req, res) => {
       const userId = user.Id || user.id || user.ID;
       const userRole = (user.role || ROLES.USER).toString().toLowerCase().trim();
 
-      // Access Token (15 minutes) - INCLUT LE RÔLE
       const accessPayload = { sub: userId, login: user.Login, role: userRole, jti, type: 'accessToken' };
       const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
-      // Refresh Token (7 jours)
       const refreshTokenId = uuidv4();
       const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
       const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
 
-      // Stocker le refresh token
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
       storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
-      // Envoyer les tokens dans des cookies HttpOnly
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: false, // false pour développement HTTP, true pour HTTPS production
+        secure: false, 
         sameSite: 'Lax',
-        maxAge: 15 * 60 * 1000 // 15 minutes en millisecondes
+        maxAge: 15 * 60 * 1000 
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: false, // false pour développement HTTP, true pour HTTPS production
+        secure: false, 
         sameSite: 'Lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 jours en millisecondes
+        maxAge: 7 * 24 * 60 * 60 * 1000 
       });
 
       return res.json({ success: true, message: 'Connexion réussie', role: userRole });
@@ -244,7 +257,6 @@ app.post('/api/inscription', (req, res) => {
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
 
-      // 🔥 CORRECTION : Une seule requête propre !
       const insertQuery = 'INSERT INTO User (nom, prenom, mail, login, mdp, role) VALUES (?, ?, ?, ?, ?, ?)';
       db.query(insertQuery, [nom, prenom, email, username, hashedPassword, ROLES.USER], (err, results) => {
         if (err) return res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -252,20 +264,16 @@ app.post('/api/inscription', (req, res) => {
         const userId = results.insertId;
         const jti = uuidv4();
 
-        // Access Token (15 minutes) - INCLUT LE RÔLE
         const accessPayload = { sub: userId, login: username, role: ROLES.USER, jti, type: 'accessToken' };
         const accessToken = jwt.sign(accessPayload, JWT_SECRET, { expiresIn: '15m' });
 
-        // Refresh Token (7 jours)
         const refreshTokenId = uuidv4();
         const refreshPayload = { sub: userId, refreshTokenId, type: 'refreshToken' };
         const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { expiresIn: '7d' });
 
-        // Stocker le refresh token
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
         storeRefreshToken(refreshTokenId, userId, jti, expiresAt);
 
-        // Envoyer les tokens dans des cookies HttpOnly
         res.cookie('accessToken', accessToken, {
           httpOnly: true,
           secure: false,
@@ -286,32 +294,19 @@ app.post('/api/inscription', (req, res) => {
   });
 });
 
-// POST - Logout (Déconnexion)
 app.post('/api/logout', authMiddleware, (req, res) => {
   const jti = req.user?.jti;
   
   if (jti) {
-    // Révoquer le token en ajoutant son jti à la liste des tokens révoqués
     revokeToken(jti);
   }
 
-  // Supprimer les cookies
-  res.clearCookie('accessToken', {
-    httpOnly: true,
-    secure: false, // false pour développement HTTP, true pour HTTPS production
-    sameSite: 'Lax'
-  });
-  
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: false, // false pour développement HTTP, true pour HTTPS production
-    sameSite: 'Lax'
-  });
+  res.clearCookie('accessToken', { httpOnly: true, secure: false, sameSite: 'Lax' });
+  res.clearCookie('refreshToken', { httpOnly: true, secure: false, sameSite: 'Lax' });
 
   return res.json({ success: true, message: 'Déconnexion réussie' });
 });
 
-// POST - Refresh Token (Obtenir un nouveau access token)
 app.post('/api/refresh-token', (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   
@@ -331,7 +326,6 @@ app.post('/api/refresh-token', (req, res) => {
       return res.status(401).json({ success: false, message: 'Refresh token invalide ou expiré' });
     }
 
-    // Générer un nouvel access token
     const userId = payload.sub;
     const jti = uuidv4();
     const newAccessPayload = { sub: userId, jti, type: 'accessToken' };
@@ -339,9 +333,9 @@ app.post('/api/refresh-token', (req, res) => {
 
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
-      secure: false, // false pour développement HTTP, true pour HTTPS production
+      secure: false, 
       sameSite: 'Lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 15 * 60 * 1000
     });
 
     return res.json({ success: true, message: 'Access token rafraîchi' });
@@ -351,44 +345,36 @@ app.post('/api/refresh-token', (req, res) => {
   }
 })
 
-
 // ========================================
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
 const poseidon = new IOPoseidon('172.29.254.100'); // IP Simulateur
 
-// --- [AJOUT ETUDIANT 2] Variables d'écoute de l'IHM et des capteurs ---
 let modeArrosageGlobal = 'inactive'; 
 let seuilArrosageGlobal = 30; // Valeur du curseur (en %)
 let humiditeSolGlobale = 50;  // Humidité de la terre lue par le TCW241
-// ----------------------------------------------------------------------
 
-// Supervision automatique en arrière-plan
 async function startWaterSupervision() {
   try {
     await poseidon.connect();
     
-    // Boucle infinie toutes les 2 secondes
     setInterval(async () => {
       try {
           await poseidon.updateAll();
-          await poseidon.gererChoixReseau(); // Gestion de la vanne Pluie/Ville
+          await poseidon.gererChoixReseau(); 
           
-          let besoinEau = false; // Par défaut, la pompe est au repos
+          let besoinEau = false; 
 
-          // Logique IHM
           if (modeArrosageGlobal === 'active') {
-              besoinEau = true; // Marche forcée
+              besoinEau = true; 
           } 
           else if (modeArrosageGlobal === 'auto') {
-              // Régulation selon le seuil du site web
               if (humiditeSolGlobale < seuilArrosageGlobal) {
                   besoinEau = true; 
               }
           }
           
-          // Envoi de la décision à la sécurité matérielle (Fail-Safe)
           await poseidon.gererPompe(besoinEau);
           
       } catch (errLoop) {
@@ -401,8 +387,7 @@ async function startWaterSupervision() {
     console.error("Erreur Supervision Poseidon:", err.message);
   }
 }
-startWaterSupervision(); // Lancement
-
+startWaterSupervision(); 
 
 // ========================================
 // 🌡️ GESTION TCW241 (ETUDIANT 1)
@@ -430,11 +415,9 @@ async function getTCWData() {
         tcw.setHumidites(h1, h2, h3);
         tcw.setHumAir(humair);
 
-        // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
         if (tcw.humiditeMoyenne !== null) {
             humiditeSolGlobale = tcw.humiditeMoyenne;
         }
-        // ----------------------------------------------------------------------------
 
         socket.end();
 
@@ -475,8 +458,6 @@ async function getTCWData() {
     });
   });
 }
-
-
 
 // ========================================
 // 🌍 EXPRESS STATIC
@@ -537,8 +518,6 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
   }
 });
 
-
-
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
     const response = await axios.get(process.env.TARGET_URL, {
@@ -570,17 +549,14 @@ app.get('/api/info', authMiddleware, async (req, res) => {
   }
 });
 
-// GET - Récupérer le rôle de l'User connecté
 app.get('/api/user-role', authMiddleware, (req, res) => {
   const tokenRole = req.user?.role;
   const userId = req.user.sub;
 
-  // Si le rôle est dans le token JWT, le retourner directement
   if (tokenRole) {
     return res.json({ success: true, role: tokenRole });
   }
 
-  // 🔥 CORRECTION : Une seule requête query
   const query = 'SELECT role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err) {
@@ -596,12 +572,8 @@ app.get('/api/user-role', authMiddleware, (req, res) => {
   });
 }); 
 
-// GET - Vérifier la connexion de l'User
 app.get('/api/check-auth', authMiddleware, (req, res) => {
   const userId = req.user.sub;
-  const login = req.user.login;
-  const role = req.user.role;
-
   const query = 'SELECT id, login, mail, role FROM User WHERE id = ?';
   db.query(query, [userId], (err, results) => {
     if (err) {
@@ -649,11 +621,9 @@ async function readTCW241() {
                 tcw.setHumidites(h1, h2, h3);
                 tcw.setHumAir(humair);
 
-                // --- [AJOUT ETUDIANT 2] On intercepte l'humidité du sol pour le mode Auto ---
                 if (tcw.humiditeMoyenne !== null) {
                     humiditeSolGlobale = tcw.humiditeMoyenne;
                 }
-                // ----------------------------------------------------------------------------
 
                 socket.end();
                 resolve(tcw);
@@ -692,8 +662,6 @@ async function saveLoop() {
         console.error("Erreur boucle BDD :", err.message);
     }
 }
-
-
 
 app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   const num = parseInt(req.params.numRelais, 10);
@@ -741,11 +709,8 @@ async function regulateLoop() {
     socket.on('connect', async () => {
         try {
             const tcw = new TCW241();
-
-            // 1. Lecture des capteurs
             const data = await tcw.getAll(client);
 
-            // 2. LECTURE DE LA CONSIGNE DEPUIS LE FICHIER JSON
             fs.readFile(configFile, 'utf8', async (err, fileData) => {
                 if (err) {
                     console.error('Erreur de lecture du fichier de config :', err);
@@ -754,14 +719,8 @@ async function regulateLoop() {
                 }
 
                 try {
-                    // On transforme le texte du fichier en objet Javascript
                     const consigne = JSON.parse(fileData);
-                    
-                    // console.log('Consigne utilisée (depuis fichier) :', consigne); // Décommente pour voir dans les logs
-
-                    // 3. Exécution de l'algorithme de régulation
                     await tcw.regulate(client, consigne);
-
                     socket.end();
                 } catch (parseErr) {
                     console.error('Erreur de format dans config_regulation.json :', parseErr);
@@ -775,15 +734,10 @@ async function regulateLoop() {
     });
 }
 
-// ========================================
-// 🔐 Admin Middleware
-// ========================================
-
 function isAdminMiddleware(req, res, next) {
   const userId = req.user?.sub;
   const tokenRole = req.user?.role;
 
-  // Vérification du rôle depuis le token (rapide) - PRIORITÉ
   if (tokenRole === ROLES.ADMIN) {
     return next();
   }
@@ -809,65 +763,56 @@ function isAdminMiddleware(req, res, next) {
   });
 }
 
-// ========================================
-// 🔐 User Middleware (Non-Admin only)
-// ========================================
-
 function isUserMiddleware(req, res, next) {
-  const tokenRole = req.user?.role;
-  
-  // Empêcher les admins d'accéder aux routes "user only" (si jamais utile)
-  // Pour l'instant, ce middleware accepte tout utilisateur authentifié
   next();
 }
 
 // ========================================
-// 🎛️ ROUTES CONTRÔLES (Ventilation, Chauffage, etc.)
+// 🎛️ ROUTES CONTRÔLES (JSON) - CORRIGÉES
 // ========================================
 
-// GET - Récupérer les derniers contrôles appliqués
+// GET - Récupérer les derniers contrôles appliqués depuis le JSON
 app.get('/api/controles', authMiddleware, (req, res) => {
-  const query = `
-    SELECT id, irrigation_mode, irrigation_threshold, 
-           misting_mode, misting_intensity,
-           ventilation_mode, ventilation_duration,
-           heating_mode, heating_target,
-           created_at
-    FROM controles
-    ORDER BY created_at DESC
-    LIMIT 1
-  `;
-
-  db.query(query, (err, results) => {
+  fs.readFile(controlesFile, 'utf8', (err, data) => {
     if (err) {
-      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+      return res.status(500).json({ success: false, message: 'Erreur lecture fichier controles' });
     }
 
-    if (results.length === 0) {
-      return res.json({ success: true, controles: null, message: 'Aucun contrôle enregistré' });
+    try {
+      const config = JSON.parse(data);
+      // On aplatit les données pour respecter le format attendu par ton front-end
+      const controlesPlats = {
+        irrigation_mode: config.irrigation.mode,
+        irrigation_threshold: config.irrigation.threshold,
+        misting_mode: config.misting.mode,
+        misting_intensity: config.misting.intensity,
+        ventilation_mode: config.ventilation.mode,
+        ventilation_duration: config.ventilation.duration,
+        heating_mode: config.heating.mode,
+        heating_target: config.heating.target
+      };
+      
+      res.json({ success: true, controles: controlesPlats });
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Erreur format json' });
     }
-
-    res.json({ success: true, controles: results[0] });
   });
 });
 
-// POST - Applique et sauvegarde les contrôles (Admin uniquement)
-//app.post('/api/controles', authMiddleware, isAdminMiddleware, (req, res) => {
+// POST - Applique et sauvegarde les contrôles dans le JSON
 app.post('/api/controles', authMiddleware, (req, res) => {
   const { irrigation, misting, ventilation, heating } = req.body;
 
-  // Validation des données
   if (!irrigation || !misting || !ventilation || !heating) {
     return res.status(400).json({ success: false, message: 'Paramètres incomplets' });
   }
 
   // --- [AJOUT ETUDIANT 2] On capture l'état et le seuil pour le Poseidon ---
   modeArrosageGlobal = irrigation.mode;
-  seuilArrosageGlobal = irrigation.threshold || 30; // 30 par défaut si non fourni
+  seuilArrosageGlobal = irrigation.threshold || 30;
   console.log(`[IHM] Arrosage -> Mode: ${modeArrosageGlobal}, Seuil: ${seuilArrosageGlobal}%`);
   // -------------------------------------------------------------------------
 
-  // Règle métier : Si ventilation est "active", chauffage ne peut pas être "active"
   if (ventilation.mode === 'active' && heating.mode === 'active') {
     return res.status(400).json({ 
       success: false, 
@@ -875,7 +820,6 @@ app.post('/api/controles', authMiddleware, (req, res) => {
     });
   }
 
-  // Durée de ventilation : seulement si mode = 'active', max 6h
   if (ventilation.mode === 'active' && (!ventilation.duration || ventilation.duration > 6 || ventilation.duration < 1)) {
     return res.status(400).json({ 
       success: false, 
@@ -883,38 +827,19 @@ app.post('/api/controles', authMiddleware, (req, res) => {
     });
   }
 
-  const query = `
-    INSERT INTO controles 
-    (irrigation_mode, irrigation_threshold, 
-     misting_mode, misting_intensity,
-     ventilation_mode, ventilation_duration,
-     heating_mode, heating_target,
-     created_at, updated_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
-  `;
+  // On prépare l'objet complet
+  const nouveauxControles = { irrigation, misting, ventilation, heating };
 
-  const values = [
-    irrigation.mode,
-    irrigation.threshold || null,
-    misting.mode,
-    misting.intensity || null,
-    ventilation.mode,
-    ventilation.duration || null,
-    heating.mode,
-    heating.target || null,
-    req.user.sub
-  ];
-
-  db.query(query, values, (err, results) => {
+  // On écrit dans le fichier JSON (plus de base de données SQL ici !)
+  fs.writeFile(controlesFile, JSON.stringify(nouveauxControles, null, 4), (err) => {
     if (err) {
-      console.error('Erreur insert controles:', err);
-      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+      console.error('Erreur écriture controles.json:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur lors de la sauvegarde' });
     }
-
+    
     res.json({ 
       success: true, 
-      message: 'Contrôles appliqués et sauvegardés',
-      controleId: results.insertId
+      message: 'Contrôles appliqués et sauvegardés'
     });
   });
 });
@@ -923,30 +848,18 @@ app.post('/api/controles', authMiddleware, (req, res) => {
 // 🔧 ROUTES ADMIN
 // ========================================
 
-// GET - Liste de tous les Users (Admin uniquement)
-//app.get('/api/admin/users', authMiddleware, isAdminMiddleware, (req, res) => {
 app.get('/api/admin/users', authMiddleware, (req, res) => {
-
   const query = 'SELECT id, login, mail, role FROM User ORDER BY login ASC';
-  
   db.query(query, (err, results) => {
     if (err) {
       console.error('Erreur récupération Users:', err);
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
-
-    res.json({ 
-      success: true, 
-      users: results,
-      count: results.length
-    });
+    res.json({ success: true, users: results, count: results.length });
   });
 });
 
-// PUT - Modifier le rôle d'un User (Admin uniquement)
-//app.put('/api/admin/users/:userId/role', authMiddleware, isAdminMiddleware, (req, res) => {
 app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
-
   const { userId } = req.params;
   const { newRole } = req.body;
 
@@ -960,11 +873,9 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
       console.error('Erreur mise à jour rôle:', err);
       return res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
-
     if (results.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User non trouvé' });
     }
-
     res.json({ success: true, message: 'Rôle mis à jour avec succès' });
   });
 });
