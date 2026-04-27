@@ -1,0 +1,18 @@
+{
+    "irrigation": {
+        "mode": "inactive",
+        "threshold": 30
+    },
+    "misting": {
+        "mode": "inactive",
+        "intensity": 50
+    },
+    "ventilation": {
+        "mode": "active",
+        "duration": 3
+    },
+    "heating": {
+        "mode": "inactive",
+        "target": 20
+    }
+}

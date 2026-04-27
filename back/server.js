@@ -18,6 +18,7 @@ const fs = require('fs');
 const IOPoseidon = require('./IOPoseidon');
 // --- Import de la classe TCW241   ---
 const TCW241 = require('./TCW241.js');
+const { set } = require('pm2');
 
 dotenv.config();
 
@@ -913,8 +914,24 @@ app.get('/status', authMiddleware,async (req, res) => {
   }
 });
 
+async function mailAuto()
+{
+  try{
+    const query = 'SELECT User.mail FROM User WHERE User.role OR User.admin = 1;';
+    db.query(query, (err, results) => {
+      console.log(results);
+  })
+  }catch{
+    console.log("Une erreur c'est produite l'ors de la recupèration de mail : ");
+  }
+  
+    
+}
+
+
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
+setInterval(mailAuto,1000);
 
 // =======================================
 // START SERVER
