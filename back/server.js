@@ -522,6 +522,31 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
   }
 });
 
+// GET - Historique de consommation pour Chart.js
+app.get('/api/history/eau', authMiddleware, (req, res) => {
+    // On récupère la conso et la date sur les dernières 24h
+    const sql = `
+        SELECT conso_total, date 
+        FROM Capteur 
+        WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR) 
+        AND conso_total IS NOT NULL
+        ORDER BY date ASC
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        const data = results.map(row => ({
+            time: new Date(row.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            consommation: row.conso_total
+        }));
+
+        res.json({ success: true, data });
+    });
+});
+
 app.get('/api/info', authMiddleware, async (req, res) => {
   try {
     const response = await axios.get(process.env.TARGET_URL, {
@@ -666,6 +691,32 @@ async function saveLoop() {
         console.error("Erreur boucle BDD :", err.message);
     }
 }
+
+// ========================================
+// 💾 HISTORISATION EAU (TABLE CAPTEUR)
+// ========================================
+
+async function sauvegarderReleveEau() {
+    try {
+        // 1. Récupération de la consommation cumulée depuis ton instance poseidon
+        const consoTotal = poseidon.getConsommationLitres();
+        
+        // 2. Insertion dans la table Capteur (on ne remplit que les colonnes Eau et Date)
+        // Les autres colonnes (temp, h1, etc.) seront NULL ou auront leurs valeurs par défaut
+        const sql = `INSERT INTO Capteur (conso_total, date) VALUES (?, NOW())`;
+        
+        db.query(sql, [consoTotal], (err) => {
+            if (err) {
+                console.error("❌ Erreur SQL Sauvegarde Eau :", err.message);
+            } else {
+                console.log(`💾 Historisation : ${consoTotal} L enregistrés dans Capteur.`);
+            }
+        });
+    } catch (error) {
+        console.error("❌ Erreur lors du relevé d'eau :", error.message);
+    }
+}
+
 
 app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   const num = parseInt(req.params.numRelais, 10);
@@ -977,6 +1028,7 @@ function mailAuto() {
 
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
+setInterval(sauvegarderReleveEau, 10000);
 //setInterval(mailAuto,60000);
 
 // =======================================
