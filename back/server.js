@@ -1043,7 +1043,6 @@ function mailAuto() {
 
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
-setInterval(sauvegarderReleveEau, 10000);
 //setInterval(mailAuto,60000);
 
 // =======================================
