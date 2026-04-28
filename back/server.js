@@ -524,7 +524,6 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
 
 // GET - Historique de consommation pour Chart.js
 app.get('/api/history/eau', authMiddleware, (req, res) => {
-    // On récupère la conso et la date sur les dernières 24h
     const sql = `
         SELECT conso_total, date 
         FROM Capteur 
@@ -540,10 +539,10 @@ app.get('/api/history/eau', authMiddleware, (req, res) => {
 
         const data = results.map(row => ({
             time: new Date(row.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            consommation: row.conso_total
+            consommation: parseFloat(row.conso_total) || 0
         }));
 
-        res.json({ success: true, data });
+        res.json({ success: true, data: data, count: data.length });
     });
 });
 
@@ -669,26 +668,42 @@ async function readTCW241() {
 
 async function saveLoop() {
     try {
+        // 1. On récupère les données de ton collègue (Température, Humidité)
         const tcw = await readTCW241();
 
-        const sql = `
-                INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-              `;
+        // 2. On récupère TES données (Consommation d'eau)
+        const consoTotal = poseidon.getConsommationLitres();
+        
+        // (Optionnel) Si tu n'as qu'un seul compteur d'eau physique, on met 0 pour la pluie, 
+        // ou on met la même valeur. Je mets 0 par défaut pour éviter les bugs.
+        const consoPluie = 0; 
 
+        // 3. On fait UNE SEULE requête pour remplir TOUTE la ligne
+        const sql = `
+            INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
+
+        // 4. On injecte le mix des deux cartes dans la base de données
         db.query(sql, [
-            tcw.conso_pluie,
-            tcw.h1,
-            tcw.h2,
-            tcw.h3,
-            tcw.humair,
-            tcw.humiditeMoyenne,
-            tcw.temperature,
-            tcw.conso_total,
-        ]);
+            consoPluie,           // Vient de ton code
+            tcw.h1,               // Vient du TCW
+            tcw.h2,               // Vient du TCW
+            tcw.h3,               // Vient du TCW
+            tcw.humair,           // Vient du TCW
+            tcw.humiditeMoyenne,  // Vient du TCW
+            tcw.temperature,      // Vient du TCW
+            consoTotal            // Vient de ton Poseidon
+        ], (err) => {
+            if (err) {
+                console.error("❌ Erreur SQL saveLoop :", err.message);
+            } else {
+                console.log(`💾 Fusion OK : Temp=${tcw.temperature}°C | Conso=${consoTotal}L enregistrés.`);
+            }
+        });
 
     } catch (err) {
-        console.error("Erreur boucle BDD :", err.message);
+        console.error("❌ Erreur boucle BDD :", err.message);
     }
 }
 
