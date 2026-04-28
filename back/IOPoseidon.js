@@ -5,8 +5,8 @@ const Modbus = require("jsmodbus");
 const MAPPING = {
   NIVEAU_CUVE: 99,  
   COMPTEUR: 100,    
-  VANNE: 99,       // Les adresses DO standard
-  POMPE: 100       // Les adresses DO standard
+  VANNE: 99,       // Les adresses DO (Relais)
+  POMPE: 100       // Les adresses DO (Relais)
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -16,7 +16,6 @@ class IOPoseidon {
     this.ip = ip;
     this.port = port;
     this.socket = new net.Socket();
-    // Le vrai Poseidon utilise généralement l'ID 1 ou 2 (on laisse 1 par défaut)
     this.client = new Modbus.client.TCP(this.socket, 1);
 
     this.data = {
@@ -51,24 +50,18 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-  // --- LECTURE OPTIMISÉE ---
+  // --- LECTURE ---
   async updateAll() {
     if (!this.isConnected) return false;
     try {
-      // HACK TEMPORAIRE : On simule une température extérieure de 15°C (car on n'a pas de capteur réel)
+      // HACK TEMPORAIRE : On simule une température de 15°C et 505 impulsions
       this.data.temperature = 15;
+      this.data.impulsions = 505;
 
-      // Lecture de la Cuve (DI 1 -> Adresse 0)
-      const resNiveau = await this.client.readDiscreteInputs(
-        MAPPING.NIVEAU_CUVE,
-        1,
-      );
-
-      // HW Group met à "1" quand c'est On, et "0" quand c'est Off
+      // Lecture de la Cuve
+      const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
       this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
 
-      // HACK TEMPORAIRE : On simule 505 impulsions (car on n'a pas de capteur réel)
-      this.data.impulsions = 505;
       return true;
     } catch (err) {
       console.error("⚠️ [Poseidon] Erreur lecture:", err.message);
@@ -76,46 +69,38 @@ class IOPoseidon {
     }
   }
 
-  getTemperature() {
-    return this.data.temperature;
-  }
-  isCuvePleine() {
-    return this.data.cuvePleine;
-  }
-  getConsommationLitres() {
-    return this.data.impulsions * LITRES_PAR_IMPULSION;
-  }
+  getTemperature() { return this.data.temperature; }
+  isCuvePleine() { return this.data.cuvePleine; }
+  getConsommationLitres() { return this.data.impulsions * LITRES_PAR_IMPULSION; }
 
-async setPompe(etat) {
+  // ==========================================
+  // 🔥 FIN DE LA SIMULATION : VRAIES COMMANDES
+  // ==========================================
+
+  async setPompe(etat) {
     if (!this.isConnected) return;
     try {
-      // Simulation pour la Revue 2 : On fait "semblant" d'écrire pour ne pas crasher.
-      // Dans la réalité, le vrai code serait : await this.client.writeSingleCoil(MAPPING.POMPE, etat);
-      
-      // On met juste à jour une variable interne pour se souvenir de l'état
+      // ON ENVOIE LE VRAI SIGNAL À LA CARTE MAINTENANT !
+      await this.client.writeSingleCoil(MAPPING.POMPE, etat);
       this.etatPompe = etat; 
-      
-      // Décommente la ligne ci-dessous si tu veux voir quand l'IHM demande d'allumer/éteindre
-      // console.log(`[Simulation] Ordre Pompe envoyé : ${etat ? 'ON' : 'OFF'}`); 
     } catch (err) {
-      console.error("Erreur Pompe:", err.message);
+      console.error("Erreur d'écriture Pompe:", err.message);
     }
   }
 
   async setReseauEau(utiliserPluie) {
     if (!this.isConnected) return;
     try {
-      // Simulation pour la Revue 2
+      // ON ENVOIE LE VRAI SIGNAL DE LA VANNE !
+      await this.client.writeSingleCoil(MAPPING.VANNE, utiliserPluie);
       this.etatVanne = utiliserPluie;
-      
-      // Décommente la ligne ci-dessous si tu veux voir quand l'IHM demande de changer de réseau
-      // console.log(`[Simulation] Ordre Vanne envoyé : ${utiliserPluie ? 'EAU PLUIE' : 'EAU VILLE'}`);
     } catch (err) {
-      console.error("Erreur Vanne:", err.message);
+      console.error("Erreur d'écriture Vanne:", err.message);
     }
   }
 
-  // --- INTELLIGENCE (Utilise SA propre température extérieure) ---
+  // --- INTELLIGENCE MATÉRIELLE ---
+  
   async gererChoixReseau() {
     const pasDeGel = this.data.temperature >= 1;
     if (this.data.cuvePleine && pasDeGel) {
@@ -127,9 +112,23 @@ async setPompe(etat) {
 
   async gererPompe(besoinEau) {
     const pasDeGel = this.data.temperature >= 1;
-    if (besoinEau && this.data.cuvePleine && pasDeGel) {
+    
+    // 1. SÉCURITÉ (Fail-Safe) : Si pas de cuve ou si gel, on bloque !
+    if (!this.data.cuvePleine || !pasDeGel) {
+      if (besoinEau) {
+        console.log(`⚠️ [SÉCURITÉ] Pompe bloquée ! (Cuve Pleine: ${this.data.cuvePleine} | Temp: ${this.data.temperature}°C)`);
+      }
+      await this.setPompe(false);
+      return;
+    }
+
+    // 2. SI TOUT EST OK, ON ÉCOUTE L'IHM
+    if (besoinEau) {
+      // On met un console.log pour que tu le voies dans PM2
+      if (!this.etatPompe) console.log(`✅ [ACTIONNEUR] ALLUMAGE POMPE (Relais ${MAPPING.POMPE} -> ON)`);
       await this.setPompe(true);
     } else {
+      if (this.etatPompe) console.log(`🛑 [ACTIONNEUR] EXTINCTION POMPE (Relais ${MAPPING.POMPE} -> OFF)`);
       await this.setPompe(false);
     }
   }
