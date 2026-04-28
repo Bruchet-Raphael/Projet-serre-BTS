@@ -914,24 +914,70 @@ app.get('/status', authMiddleware,async (req, res) => {
   }
 });
 
-async function mailAuto()
-{
-  try{
-    const query = 'SELECT User.mail FROM User WHERE User.role OR User.admin = 1;';
-    db.query(query, (err, results) => {
-      console.log(results);
-  })
-  }catch{
-    console.log("Une erreur c'est produite l'ors de la recupèration de mail : ");
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
   }
-  
-    
+});
+
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+function mailAuto() {
+  try {
+    const query = 'SELECT mail FROM User WHERE role = 1 OR admin = 1;';
+
+    db.query(query, async (err, results) => {
+      if (err) {
+        console.log("Erreur SQL :", err);
+        return;
+      }
+
+      console.log("Mails récupérés :", results);
+
+      for (const user of results) {
+        const email = user.mail;
+
+        if (!email || !email.includes("@")) {
+          console.log("Adresse email invalide :", email);
+          continue;
+        }
+
+        try {
+          await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: email,
+            subject: "Notification automatique",
+            text: "Bonjour, ceci est un message automatique envoyé par le serveur."
+          });
+
+          console.log("Mail envoyé à :", email);
+
+        } catch (sendErr) {
+          console.log("Erreur envoi mail à", email, ":", sendErr);
+        }
+
+        // 🔥 Pause pour éviter le blocage Gmail
+        await wait(500);
+      }
+    });
+
+  } catch (e) {
+    console.log("Une erreur s'est produite :", e);
+  }
+}
+
 
 
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
-setInterval(mailAuto,1000);
+//setInterval(mailAuto,60000);
 
 // =======================================
 // START SERVER

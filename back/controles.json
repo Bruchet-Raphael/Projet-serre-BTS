@@ -1,18 +1,18 @@
 {
     "irrigation": {
-        "mode": "inactive",
-        "threshold": 30
+        "mode": "auto",
+        "threshold": 90
     },
     "misting": {
-        "mode": "inactive",
-        "intensity": 50
+        "mode": "auto",
+        "intensity": 45
     },
     "ventilation": {
-        "mode": "active",
-        "duration": 3
+        "mode": "auto",
+        "duration": null
     },
     "heating": {
-        "mode": "inactive",
+        "mode": "auto",
         "target": 20
     }
 }
