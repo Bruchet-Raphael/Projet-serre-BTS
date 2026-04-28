@@ -494,7 +494,7 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
       FROM Capteur
       WHERE date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
       ORDER BY date ASC
-      `;
+    `;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -502,13 +502,19 @@ app.get('/api/historique-24h', authMiddleware, (req, res) => {
       }
 
       const historique = results.map(row => ({
-        timestamp: new Date(row.timestamp).toLocaleTimeString('fr-FR'),
-        temperature: parseFloat(row.temperature),
-        h1: parseFloat(row.h1),
-        h2: parseFloat(row.h2),
-        h3: parseFloat(row.h3),
-        humiditeMoyenne: parseFloat(row.humidite_moyenne),
-        humAir: parseFloat(row.humidite_air)
+        // CORRECTION 1 : On lit row.date et on gère les dates vides
+        timestamp: row.date ? new Date(row.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A',
+        temperature: row.temperature !== null ? parseFloat(row.temperature) : null,
+        h1: row.h1 !== null ? parseFloat(row.h1) : null,
+        h2: row.h2 !== null ? parseFloat(row.h2) : null,
+        h3: row.h3 !== null ? parseFloat(row.h3) : null,
+        
+        // CORRECTION 2 : On cible la vraie colonne de la BDD (humidite_sol)
+        humiditeMoyenne: row.humidite_sol !== null ? parseFloat(row.humidite_sol) : null,
+        humAir: row.humidite_air !== null ? parseFloat(row.humidite_air) : null,
+        
+        // Bonus : On ajoute ta conso totale pour le tableau Front-end si besoin !
+        consoTotal: row.conso_total !== null ? parseFloat(row.conso_total) : null 
       }));
 
       res.json({
@@ -668,70 +674,48 @@ async function readTCW241() {
 
 async function saveLoop() {
     try {
-        // 1. On récupère les données de ton collègue (Température, Humidité)
-        const tcw = await readTCW241();
+        // 1. On récupère les données de ton collègue AVEC UNE SÉCURITÉ (try/catch interne)
+        let tcw = {};
+        try {
+            tcw = await readTCW241();
+        } catch (tcwErr) {
+            console.error("⚠️ [Alerte] Impossible de lire le TCW241, mais on sauvegarde l'eau quand même !");
+            // On initialise des valeurs vides pour ne pas faire planter la base de données
+            tcw = { h1: null, h2: null, h3: null, humair: null, humiditeMoyenne: null, temperature: null };
+        }
 
         // 2. On récupère TES données (Consommation d'eau)
         const consoTotal = poseidon.getConsommationLitres();
-        
-        // (Optionnel) Si tu n'as qu'un seul compteur d'eau physique, on met 0 pour la pluie, 
-        // ou on met la même valeur. Je mets 0 par défaut pour éviter les bugs.
         const consoPluie = 0; 
 
-        // 3. On fait UNE SEULE requête pour remplir TOUTE la ligne
+        // 3. On prépare la requête
         const sql = `
             INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `;
 
-        // 4. On injecte le mix des deux cartes dans la base de données
+        // 4. On injecte dans la base de données
         db.query(sql, [
-            consoPluie,           // Vient de ton code
-            tcw.h1,               // Vient du TCW
-            tcw.h2,               // Vient du TCW
-            tcw.h3,               // Vient du TCW
-            tcw.humair,           // Vient du TCW
-            tcw.humiditeMoyenne,  // Vient du TCW
-            tcw.temperature,      // Vient du TCW
-            consoTotal            // Vient de ton Poseidon
+            consoPluie,           
+            tcw.h1,               
+            tcw.h2,               
+            tcw.h3,               
+            tcw.humair,           
+            tcw.humiditeMoyenne,  
+            tcw.temperature,      
+            consoTotal            
         ], (err) => {
             if (err) {
                 console.error("❌ Erreur SQL saveLoop :", err.message);
             } else {
-                console.log(`💾 Fusion OK : Temp=${tcw.temperature}°C | Conso=${consoTotal}L enregistrés.`);
+                console.log(`💾 Fusion OK : Temp=${tcw.temperature || 'N/A'}°C | Conso=${consoTotal}L enregistrés.`);
             }
         });
 
     } catch (err) {
-        console.error("❌ Erreur boucle BDD :", err.message);
+        console.error("❌ Erreur critique boucle BDD :", err.message);
     }
 }
-
-// ========================================
-// 💾 HISTORISATION EAU (TABLE CAPTEUR)
-// ========================================
-
-async function sauvegarderReleveEau() {
-    try {
-        // 1. Récupération de la consommation cumulée depuis ton instance poseidon
-        const consoTotal = poseidon.getConsommationLitres();
-        
-        // 2. Insertion dans la table Capteur (on ne remplit que les colonnes Eau et Date)
-        // Les autres colonnes (temp, h1, etc.) seront NULL ou auront leurs valeurs par défaut
-        const sql = `INSERT INTO Capteur (conso_total, date) VALUES (?, NOW())`;
-        
-        db.query(sql, [consoTotal], (err) => {
-            if (err) {
-                console.error("❌ Erreur SQL Sauvegarde Eau :", err.message);
-            } else {
-                console.log(`💾 Historisation : ${consoTotal} L enregistrés dans Capteur.`);
-            }
-        });
-    } catch (error) {
-        console.error("❌ Erreur lors du relevé d'eau :", error.message);
-    }
-}
-
 
 app.post('/api/relais/:numRelais', authMiddleware, async (req, res) => {
   const num = parseInt(req.params.numRelais, 10);
