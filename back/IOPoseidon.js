@@ -3,10 +3,10 @@ const Modbus = require("jsmodbus");
 
 // --- CONSTANTES DE MAPPING (Standard HW Group Poseidon) ---
 const MAPPING = {
-  NIVEAU_CUVE: 99,  
-  COMPTEUR: 100,    
-  VANNE: 99,       // Les adresses DO (Relais)
-  POMPE: 100       // Les adresses DO (Relais)
+  NIVEAU_CUVE: 0,  
+  COMPTEUR: 1,    
+  VANNE: 151,       // Les adresses DO (Relais)
+  POMPE: 152       // Les adresses DO (Relais)
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
