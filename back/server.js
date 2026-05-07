@@ -11,6 +11,8 @@ const net = require('net');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const axios = require('axios');
+const http = require('http');
+const socketIO = require('socket.io');
 
 const fs = require('fs');
 
@@ -23,6 +25,17 @@ const { set } = require('pm2');
 dotenv.config();
 
 const app = express();
+
+// ✅ Création du serveur HTTP avec Socket.io
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: {
+    origin: 'http://172.29.160.160', // Autoriser les requêtes du frontend
+    credentials: true,
+    methods: ['GET', 'POST']
+  },
+  transports: ['websocket', 'polling']
+});
 
 // ✅ CORS configuré pour permettre credentials (cookies)
 app.use(cors({
@@ -1033,6 +1046,164 @@ setInterval(saveLoop, 10000);
 // START SERVER
 // ========================================
 
-app.listen(PORT, () => {
+// =======================================
+// 🔌 CONFIGURATION WEBSOCKET
+// =======================================
+
+// Stocker les clients connectés avec leurs données
+const connectedClients = new Map();
+
+io.on('connection', (socket) => {
+  console.log(`✅ Client connecté: ${socket.id}`);
+  
+  // Vérifier le token JWT du client à la connexion
+  const token = socket.handshake.auth.token;
+  let clientData = { id: socket.id, authenticated: false, userId: null };
+  
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      if (!isRevoked(payload.jti)) {
+        clientData.authenticated = true;
+        clientData.userId = payload.sub;
+        clientData.login = payload.login;
+        console.log(`✅ Client authentifié: ${payload.login}`);
+      }
+    } catch (err) {
+      console.log(`⚠️ Token invalide pour le client ${socket.id}`);
+    }
+  }
+  
+  connectedClients.set(socket.id, clientData);
+  
+  // ==========================================
+  // ÉVÉNEMENTS DE DONNÉES CAPTEURS
+  // ==========================================
+  
+  // Demande des données temps réel
+  socket.on('request-sensor-data', () => {
+    try {
+      const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+      socket.emit('sensor-data-update', {
+        temperature: configData.temperature,
+        humidite: configData.humidite,
+        humiditeair: configData.humiditeair,
+        timestamp: new Date().toISOString(),
+        relay0: configData.relay0,
+        relay1: configData.relay1,
+        relay2: configData.relay2,
+        relay3: configData.relay3
+      });
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur lecture données capteurs' });
+    }
+  });
+  
+  // Demande des contrôles
+  socket.on('request-controls', () => {
+    try {
+      const controles = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+      socket.emit('controls-update', controles);
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur lecture contrôles' });
+    }
+  });
+  
+  // ==========================================
+  // ÉVÉNEMENTS DE CONTRÔLE SERRE
+  // ==========================================
+  
+  // Mise à jour irrigation
+  socket.on('update-irrigation', (data) => {
+    if (!clientData.authenticated) {
+      socket.emit('error', { message: 'Non authentifié' });
+      return;
+    }
+    
+    modeArrosageGlobal = data.mode;
+    seuilArrosageGlobal = data.threshold;
+    
+    try {
+      const controles = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+      controles.irrigation = data;
+      fs.writeFileSync(controlesFile, JSON.stringify(controles, null, 4));
+      
+      // Broadcaster à tous les clients
+      io.emit('controls-update', controles);
+      socket.emit('success', { message: 'Irrigation mise à jour' });
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur mise à jour irrigation' });
+    }
+  });
+  
+  // Mise à jour brumisation
+  socket.on('update-misting', (data) => {
+    if (!clientData.authenticated) {
+      socket.emit('error', { message: 'Non authentifié' });
+      return;
+    }
+    
+    try {
+      const controles = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+      controles.misting = data;
+      fs.writeFileSync(controlesFile, JSON.stringify(controles, null, 4));
+      io.emit('controls-update', controles);
+      socket.emit('success', { message: 'Brumisation mise à jour' });
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur mise à jour brumisation' });
+    }
+  });
+  
+  // Mise à jour ventilation
+  socket.on('update-ventilation', (data) => {
+    if (!clientData.authenticated) {
+      socket.emit('error', { message: 'Non authentifié' });
+      return;
+    }
+    
+    try {
+      const controles = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+      controles.ventilation = data;
+      fs.writeFileSync(controlesFile, JSON.stringify(controles, null, 4));
+      io.emit('controls-update', controles);
+      socket.emit('success', { message: 'Ventilation mise à jour' });
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur mise à jour ventilation' });
+    }
+  });
+  
+  // Mise à jour chauffage
+  socket.on('update-heating', (data) => {
+    if (!clientData.authenticated) {
+      socket.emit('error', { message: 'Non authentifié' });
+      return;
+    }
+    
+    try {
+      const controles = JSON.parse(fs.readFileSync(controlesFile, 'utf8'));
+      controles.heating = data;
+      fs.writeFileSync(controlesFile, JSON.stringify(controles, null, 4));
+      io.emit('controls-update', controles);
+      socket.emit('success', { message: 'Chauffage mise à jour' });
+    } catch (err) {
+      socket.emit('error', { message: 'Erreur mise à jour chauffage' });
+    }
+  });
+  
+  // ==========================================
+  // ÉVÉNEMENTS DE DÉCONNEXION
+  // ==========================================
+  
+  socket.on('disconnect', () => {
+    console.log(`❌ Client déconnecté: ${socket.id}`);
+    connectedClients.delete(socket.id);
+  });
+  
+  socket.on('error', (err) => {
+    console.error(`⚠️ Erreur WebSocket [${socket.id}]:`, err);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
