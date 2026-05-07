@@ -19,7 +19,6 @@ class IOPoseidon {
     this.client = new Modbus.client.TCP(this.socket, 1);
 
     this.data = {
-      temperature: 15, // Hack temporaire anti-gel
       cuvePleine: false,
       impulsions: 505, 
     };
@@ -89,16 +88,17 @@ class IOPoseidon {
   }
 
   // --- INTELLIGENCE MATÉRIELLE ---
-  async gererChoixReseau() {
-    const pasDeGel = this.data.temperature >= 1;
+async gererChoixReseau(temperatureTCW) {
+    const pasDeGel = temperatureTCW >= 1;
     await this.setReseauEau(this.data.cuvePleine && pasDeGel);
   }
 
-  async gererPompe(besoinEau) {
-    const pasDeGel = this.data.temperature >= 1;
+  // On ajoute le paramètre "temperatureTCW"
+  async gererPompe(besoinEau, temperatureTCW) {
+    const pasDeGel = temperatureTCW >= 1;
     
     if (!this.data.cuvePleine || !pasDeGel) {
-      if (besoinEau) console.log(`⚠️ [SÉCURITÉ] Pompe bloquée ! (Cuve Pleine: ${this.data.cuvePleine} | Temp: ${this.data.temperature}°C)`);
+      if (besoinEau) console.log(`⚠️ [SÉCURITÉ] Pompe bloquée ! (Cuve Pleine: ${this.data.cuvePleine} | Temp TCW: ${temperatureTCW}°C)`);
       await this.setPompe(false);
       return;
     }

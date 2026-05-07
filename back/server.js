@@ -62,7 +62,7 @@ if (!fs.existsSync(configFile)) {
 let modeArrosageGlobal = 'inactive'; 
 let seuilArrosageGlobal = 30; 
 let humiditeSolGlobale = 50;
-
+let temperatureGlobale = 15;
 // ========================================
 // 📄 FICHIER DE CONFIGURATION (Contrôles IHM)
 // ========================================
@@ -366,7 +366,8 @@ async function startWaterSupervision() {
     setInterval(async () => {
       try {
           await poseidon.updateAll();
-          await poseidon.gererChoixReseau(); 
+          
+          await poseidon.gererChoixReseau(temperatureGlobale); 
           
           let besoinEau = false; 
 
@@ -379,7 +380,7 @@ async function startWaterSupervision() {
               }
           }
           
-          await poseidon.gererPompe(besoinEau);
+          await poseidon.gererPompe(besoinEau, temperatureGlobale);
           
       } catch (errLoop) {
           console.error("Erreur Poseidon :", errLoop.message);
@@ -659,6 +660,10 @@ async function readTCW241() {
                     humiditeSolGlobale = tcw.humiditeMoyenne;
                 }
 
+                if (tcw.temperature !== null) {
+                    temperatureGlobale = tcw.temperature;
+                }
+
                 socket.end();
                 resolve(tcw);
 
@@ -674,27 +679,22 @@ async function readTCW241() {
 
 async function saveLoop() {
     try {
-        // 1. On récupère les données de ton collègue AVEC UNE SÉCURITÉ (try/catch interne)
         let tcw = {};
         try {
             tcw = await readTCW241();
         } catch (tcwErr) {
             console.error("⚠️ [Alerte] Impossible de lire le TCW241, mais on sauvegarde l'eau quand même !");
-            // On initialise des valeurs vides pour ne pas faire planter la base de données
             tcw = { h1: null, h2: null, h3: null, humair: null, humiditeMoyenne: null, temperature: null };
         }
 
-        // 2. On récupère TES données (Consommation d'eau)
         const consoTotal = poseidon.getConsommationLitres();
         const consoPluie = 0; 
 
-        // 3. On prépare la requête
         const sql = `
             INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `;
 
-        // 4. On injecte dans la base de données
         db.query(sql, [
             consoPluie,           
             tcw.h1,               
