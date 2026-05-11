@@ -75,6 +75,7 @@ if (!fs.existsSync(configFile)) {
 let modeArrosageGlobal = 'inactive'; 
 let seuilArrosageGlobal = 30; 
 let humiditeSolGlobale = 50;
+let temperatureGlobale = 15;
 
 // ========================================
 // 📄 FICHIER DE CONFIGURATION (Contrôles IHM)
@@ -671,6 +672,11 @@ async function readTCW241() {
                 if (tcw.humiditeMoyenne !== null) {
                     humiditeSolGlobale = tcw.humiditeMoyenne;
                 }
+
+                if (tcw.temperature !== null && tcw.temperature !== undefined) {
+                    temperatureGlobale = tcw.temperature;
+                }
+                // -----------------------------------------------------------
 
                 socket.end();
                 resolve(tcw);

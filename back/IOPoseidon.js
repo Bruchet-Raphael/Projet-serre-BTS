@@ -5,8 +5,8 @@ const Modbus = require("jsmodbus");
 const MAPPING = {
   NIVEAU_CUVE: 99,   
   COMPTEUR: 100,      
-  VANNE: 99,       
-  POMPE: 100       
+  VANNE: 199,       
+  POMPE: 200       
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
