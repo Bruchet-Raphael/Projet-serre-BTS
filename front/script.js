@@ -48,12 +48,136 @@ let chartViewOffset = 0;  // Pour naviguer dans l'historique
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     initializeCharts();
-    startDataPolling();
+    // Initialiser WebSocket d'abord
+    initializeWebSocket().then(() => {
+        // Puis charger les contrôles
+        loadControles();
+        // Et mettre à jour l'affichage
+        updateAuthButton(); // Appel initial pour l'état de connexion
+    });
     setupControlsListeners();
     setupChartNavigation();
-    loadControles();
-    updateAuthButton(); // Appel initial pour l'état de connexion
+    // Lancer le polling (ancien système REST en secours)
+    startDataPolling();
 });
+
+// ========================================
+// 🌐 CONFIGURATION WEBSOCKET
+// ========================================
+
+async function initializeWebSocket() {
+    // Récupérer le token depuis les cookies
+    const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('accessToken='))
+        ?.split('=')[1];
+
+    return new Promise((resolve, reject) => {
+        wsClient.on('connected', () => {
+            console.log('✅ Client WebSocket connecté');
+            appState.isConnected = true;
+            
+            // Demander les données initiales
+            wsClient.requestSensorData();
+            wsClient.requestControls();
+            
+            // Émettre un événement de connexion
+            document.dispatchEvent(new CustomEvent('websocket-connected'));
+            resolve();
+        });
+
+        wsClient.on('sensor-data', (data) => {
+            console.log('📊 Mise à jour capteurs WebSocket:', data);
+            // Convertir les données du serveur au format attendu par updateSensorData
+            const formattedData = {
+                temperature: data.temperature,
+                humidity: data.humidite,
+                humAir: data.humiditeair,
+                consoEau: 0,  // À initialiser selon vos données
+                cuvePleine: false,
+                reseauPluie: false,
+                timestamp: data.timestamp
+            };
+            updateSensorData(formattedData);
+        });
+
+        wsClient.on('controls', (controls) => {
+            console.log('⚙️ Contrôles mis à jour WebSocket:', controls);
+            // Mettre à jour l'interface avec les contrôles reçus
+            const panels = document.querySelectorAll('.control-panel');
+            if (panels.length >= 4) {
+                // Irrigation
+                if (controls.irrigation) {
+                    setModeButton(panels[0], controls.irrigation.mode);
+                    const slider = document.getElementById('irrigation-slider');
+                    if (slider && controls.irrigation.threshold !== undefined) {
+                        slider.value = controls.irrigation.threshold;
+                        document.getElementById('irrigation-threshold').textContent = controls.irrigation.threshold;
+                    }
+                }
+                
+                // Brumisation
+                if (controls.misting) {
+                    setModeButton(panels[1], controls.misting.mode);
+                    const slider = document.getElementById('mist-slider');
+                    if (slider && controls.misting.intensity !== undefined) {
+                        slider.value = controls.misting.intensity;
+                        document.getElementById('mist-intensity').textContent = controls.misting.intensity;
+                    }
+                }
+                
+                // Ventilation
+                if (controls.ventilation) {
+                    setModeButton(panels[2], controls.ventilation.mode);
+                    const slider = document.getElementById('ventilation-duration-slider');
+                    if (slider && controls.ventilation.duration !== undefined) {
+                        slider.value = controls.ventilation.duration;
+                        document.getElementById('ventilation-duration').textContent = controls.ventilation.duration;
+                    }
+                }
+                
+                // Chauffage
+                if (controls.heating) {
+                    setModeButton(panels[3], controls.heating.mode);
+                    const slider = document.getElementById('heating-slider');
+                    if (slider && controls.heating.target !== undefined) {
+                        slider.value = controls.heating.target;
+                        document.getElementById('heating-target').textContent = controls.heating.target;
+                    }
+                }
+            }
+        });
+
+        wsClient.on('server-success', (data) => {
+            console.log('✅ Action réussie:', data.message);
+            addAlert('success', 'Succès', data.message);
+        });
+
+        wsClient.on('server-error', (data) => {
+            console.error('❌ Erreur serveur:', data.message);
+            addAlert('error', 'Erreur', data.message);
+        });
+
+        wsClient.on('connection-error', (error) => {
+            console.error('❌ Erreur connexion WebSocket:', error);
+            appState.isConnected = false;
+            document.dispatchEvent(new CustomEvent('websocket-disconnected'));
+            reject(error);
+        });
+
+        wsClient.on('disconnected', (data) => {
+            console.warn('⚠️ Déconnecté:', data.reason);
+            appState.isConnected = false;
+            document.dispatchEvent(new CustomEvent('websocket-disconnected'));
+        });
+
+        // Connecter le client
+        wsClient.connect(token).catch(err => {
+            console.error('Erreur lors de la connexion WebSocket:', err);
+            resolve(); // Accepter quand même pour fallback REST
+        });
+    });
+}
 
 // ========================================
 // EVENT LISTENERS
@@ -226,6 +350,32 @@ function showApplyNotification() {
 }
 
 async function sendControlsToBackend(controls) {
+    console.log('📤 Envoi des contrôles:', controls);
+    
+    // Essayer WebSocket en priorité
+    if (wsClient && wsClient.isConnected()) {
+        console.log('✅ Envoi via WebSocket');
+        
+        // Envoyer chaque type de contrôle
+        if (controls.irrigation) {
+            wsClient.updateIrrigation(controls.irrigation.mode, controls.irrigation.threshold);
+        }
+        if (controls.misting) {
+            wsClient.updateMisting(controls.misting.mode, controls.misting.intensity);
+        }
+        if (controls.ventilation) {
+            wsClient.updateVentilation(controls.ventilation.mode, controls.ventilation.duration);
+        }
+        if (controls.heating) {
+            wsClient.updateHeating(controls.heating.mode, controls.heating.target);
+        }
+        
+        showApplyNotification();
+        return;
+    }
+    
+    // Fallback: REST HTTP si WebSocket pas disponible
+    console.log('⚠️ WebSocket pas disponible, fallback REST');
     try {
         const response = await fetch(`${CONFIG.apiUrl}/controles`, {
             method: 'POST',
