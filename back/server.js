@@ -380,7 +380,8 @@ async function startWaterSupervision() {
     setInterval(async () => {
       try {
           await poseidon.updateAll();
-          await poseidon.gererChoixReseau(); 
+          
+          await poseidon.gererChoixReseau(temperatureGlobale); 
           
           let besoinEau = false; 
 
@@ -393,7 +394,7 @@ async function startWaterSupervision() {
               }
           }
           
-          await poseidon.gererPompe(besoinEau);
+          await poseidon.gererPompe(besoinEau, temperatureGlobale);
           
       } catch (errLoop) {
           console.error("Erreur Poseidon :", errLoop.message);
@@ -405,7 +406,7 @@ async function startWaterSupervision() {
     console.error("Erreur Supervision Poseidon:", err.message);
   }
 }
-startWaterSupervision(); 
+startWaterSupervision();
 
 // ========================================
 // 🌡️ GESTION TCW241 (ETUDIANT 1)
