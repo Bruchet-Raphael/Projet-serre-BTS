@@ -1060,6 +1060,43 @@ setInterval(saveLoop, 10000);
 // Stocker les clients connectés avec leurs données
 const connectedClients = new Map();
 
+// ========================================
+// 📡 FONCTION POUR RÉCUPÉRER LES DONNÉES SERRE
+// ========================================
+
+async function fetchSerreData() {
+  try {
+    const response = await axios.get(process.env.TARGET_URL, {
+      timeout: 5000,
+      responseType: 'json',
+      auth: { username: process.env.US, password: process.env.PSW }
+    });
+
+    const monitor = response.data?.Monitor || {};
+    const sensorData = TCW241.fromMonitor(monitor);
+
+    return sensorData;
+  } catch (error) {
+    console.error('⚠️ Erreur récupération données serre:', error.message);
+    return null;
+  }
+}
+
+// ========================================
+// 🔄 BROADCAST DES DONNÉES AUTOMATIQUEMENT
+// ========================================
+
+setInterval(async () => {
+  const data = await fetchSerreData();
+  if (data) {
+    // Broadcast à tous les clients connectés
+    io.emit('sensor-data-update', {
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+  }
+}, 5000); // Toutes les 5 secondes
+
 io.on('connection', (socket) => {
   console.log(`✅ Client connecté: ${socket.id}`);
   
@@ -1087,22 +1124,16 @@ io.on('connection', (socket) => {
   // ÉVÉNEMENTS DE DONNÉES CAPTEURS
   // ==========================================
   
-  // Demande des données temps réel
-  socket.on('request-sensor-data', () => {
-    try {
-      const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+  // Demande des données temps réel (sur demande)
+  socket.on('request-sensor-data', async () => {
+    const data = await fetchSerreData();
+    if (data) {
       socket.emit('sensor-data-update', {
-        temperature: configData.temperature,
-        humidite: configData.humidite,
-        humiditeair: configData.humiditeair,
-        timestamp: new Date().toISOString(),
-        relay0: configData.relay0,
-        relay1: configData.relay1,
-        relay2: configData.relay2,
-        relay3: configData.relay3
+        ...data,
+        timestamp: new Date().toISOString()
       });
-    } catch (err) {
-      socket.emit('error', { message: 'Erreur lecture données capteurs' });
+    } else {
+      socket.emit('error', { message: 'Erreur récupération données serre' });
     }
   });
   

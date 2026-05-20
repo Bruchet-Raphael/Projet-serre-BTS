@@ -575,14 +575,23 @@ async function fetchSensorData() {
 }
 
 function startDataPolling() {
-    fetchSensorData();
-    fetchHistorique24h(); // Récupérer l'historique au démarrage
+    // ⚠️ IMPORTANT: Le WebSocket envoie déjà les données toutes les 5 secondes
+    // Pas besoin de polling REST pour les capteurs!
+    // Fallback REST seulement si WebSocket est déconnecté
     
-    // Mise à jour des données temps réel
-    setInterval(fetchSensorData, CONFIG.updateInterval);
+    // Récupérer l'historique au démarrage
+    fetchHistorique24h();
     
     // Mise à jour des graphiques tous les 5 secondes
     setInterval(fetchHistorique24h, 5000);
+    
+    // Fallback: Si WebSocket n'est pas connecté, utiliser REST (10 secondes)
+    setInterval(() => {
+        if (!wsClient.isConnected()) {
+            console.warn('⚠️ WebSocket pas connecté, fallback REST');
+            fetchSensorData();
+        }
+    }, 10000);
 }
 
 
