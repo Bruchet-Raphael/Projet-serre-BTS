@@ -780,7 +780,7 @@ async function regulateLoop() {
 
     socket.connect({ host: process.env.serverIP, port: process.env.portMod });
 
-    socket.on('connect', async () => {
+    socket.on('socket-connect', async () => {
         try {
             const tcw = new TCW241();
             const data = await tcw.getAll(client);
