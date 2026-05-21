@@ -999,55 +999,108 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function mailAuto() {
+async function mailAuto() {
+  const tcw = new TCW241();
+  const socket = new net.Socket();
+  const client = new Modbus.client.TCP(socket);
+
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const alertFile = path.join(__dirname, "alert.json");
+
+  // Charger le fichier JSON
+  let alertData = { lastTempAlert: null };
+
+  if (fs.existsSync(alertFile)) {
+    try {
+      alertData = JSON.parse(fs.readFileSync(alertFile, "utf8"));
+    } catch (e) {
+      console.log("Erreur lecture JSON :", e);
+    }
+  }
+
   try {
-    const query = 'SELECT mail FROM User WHERE role = 1 OR admin = 1;';
-
-    db.query(query, async (err, results) => {
-      if (err) {
-        console.log("Erreur SQL :", err);
-        return;
-      }
-
-      console.log("Mails récupérés :", results);
-
-      for (const user of results) {
-        const email = user.mail;
-
-        if (!email || !email.includes("@")) {
-          console.log("Adresse email invalide :", email);
-          continue;
-        }
-
-        try {
-          await transporter.sendMail({
-            from: process.env.SMTP_USER,
-            to: email,
-            subject: "Notification automatique",
-            text: "Bonjour, ceci est un message automatique envoyé par le serveur."
-          });
-
-          console.log("Mail envoyé à :", email);
-
-        } catch (sendErr) {
-          console.log("Erreur envoi mail à", email, ":", sendErr);
-        }
-
-        // 🔥 Pause pour éviter le blocage Gmail
-        await wait(500);
-      }
+    // Connexion Modbus
+    await new Promise((resolve, reject) => {
+      socket.connect(
+        { host: process.env.serverIP, port: process.env.portMod },
+        resolve
+      );
+      socket.on("error", reject);
     });
 
+    const temp = await tcw.getTemp(client);
+    console.log("Température lue :", temp);
+
+    if (temp <= 3) {
+
+      // Vérifier si une alerte a été envoyée dans l'heure
+      if (alertData.lastTempAlert) {
+        const last = new Date(alertData.lastTempAlert);
+        const now = new Date();
+
+        const diffMs = now - last;
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours < 1) {
+          console.log("⛔ Alerte déjà envoyée il y a moins d'une heure.");
+          return;
+        }
+      }
+
+      console.log("⚠ Alerte autorisée, envoi des mails…");
+
+      const query = "SELECT mail FROM User WHERE role = 1 OR admin = 1;";
+
+      db.query(query, async (err, results) => {
+        if (err) {
+          console.log("Erreur SQL :", err);
+          return;
+        }
+
+        for (const user of results) {
+          const email = user.mail;
+
+          if (!email || !email.includes("@")) {
+            console.log("Adresse email invalide :", email);
+            continue;
+          }
+
+          try {
+            await transporter.sendMail({
+              from: process.env.SMTP_USER,
+              to: email,
+              subject: "Alerte température",
+              text: `Attention : la température est descendue à ${temp}°C`
+            });
+
+            console.log("Mail envoyé à :", email);
+
+          } catch (sendErr) {
+            console.log("Erreur envoi mail à", email, ":", sendErr);
+          }
+
+          await wait(500);
+        }
+
+        // Mise à jour du fichier JSON
+        alertData.lastTempAlert = new Date().toISOString();
+        fs.writeFileSync(alertFile, JSON.stringify(alertData, null, 2));
+
+        console.log("📝 Alerte enregistrée dans alert.json");
+      });
+    }
+
   } catch (e) {
-    console.log("Une erreur s'est produite :", e);
+    console.log("Erreur dans mailAuto :", e);
   }
 }
 
 
 
+
+setInterval(mailAuto,10000);
 setInterval(regulateLoop, 10000);
 setInterval(saveLoop, 10000);
-//setInterval(mailAuto,60000);
 
 // =======================================
 // START SERVER
