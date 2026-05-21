@@ -48,15 +48,21 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-  // --- LECTURE ISOLÉE ---
+// --- LECTURE ISOLÉE ---
   async updateAll() {
     if (!this.isConnected) return false;
     
     try {
+      // 1. Lecture de la sécurité Cuve (Entrée TOR)
       const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
       this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
+
+      // 2. Lecture du Débitmètre (Registre d'entrée Modbus)
+      const resCompteur = await this.client.readInputRegisters(MAPPING.COMPTEUR, 1);
+      this.data.impulsions = resCompteur.response.body.valuesAsArray[0];
+
     } catch (err) {
-      console.error(`❌ [Erreur Modbus] Lecture CUVE refusée à l'adresse DI ${MAPPING.NIVEAU_CUVE}`);
+      console.error(`❌ [Erreur Modbus] Lecture CUVE/COMPTEUR refusée`);
     }
 
     return true;
@@ -64,6 +70,8 @@ class IOPoseidon {
 
   getTemperature() { return this.data.temperature; }
   isCuvePleine() { return this.data.cuvePleine; }
+  
+  // Conversion mathématique des impulsions en Litres
   getConsommationLitres() { return this.data.impulsions * LITRES_PAR_IMPULSION; }
 
   // --- ÉCRITURE ISOLÉE ---
