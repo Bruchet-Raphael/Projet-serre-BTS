@@ -14,6 +14,44 @@ class WebSocketClient {
   }
 
   /**
+   * Enregistrer les listeners Socket.io permanents
+   * (appelé une fois à la connexion et maintenu lors des reconnexions)
+   */
+  setupSocketListeners() {
+    if (!this.socket) return;
+
+    // Nettoyer les anciens listeners pour éviter les doublons
+    this.socket.off('error');
+    this.socket.off('success');
+    this.socket.off('sensor-data-update');
+    this.socket.off('controls-update');
+
+    // Gérer les erreurs personnalisées
+    this.socket.on('error', (data) => {
+      console.error('❌ Erreur serveur:', data);
+      this.emit('server-error', data);
+    });
+
+    // Gérer les messages de succès
+    this.socket.on('success', (data) => {
+      console.log('✅ Succès serveur:', data);
+      this.emit('server-success', data);
+    });
+
+    // Réception des données capteurs
+    this.socket.on('sensor-data-update', (data) => {
+      console.log('📊 Données capteurs reçues:', data);
+      this.emit('sensor-data', data);
+    });
+
+    // Réception des contrôles
+    this.socket.on('controls-update', (controls) => {
+      console.log('⚙️ Contrôles mis à jour:', controls);
+      this.emit('controls', controls);
+    });
+  }
+
+  /**
    * Établir la connexion WebSocket
    */
   connect(token = null) {
@@ -38,11 +76,15 @@ class WebSocketClient {
 
         this.socket = io(this.serverUrl, socketOptions);
 
-        // Événement de connexion réussie
+        // Événement de connexion réussie (déclenché aussi à chaque reconnexion)
         this.socket.on('connect', () => {
           this.connected = true;
           this.reconnectAttempts = 0;
           console.log(`✅ WebSocket connecté: ${this.socket.id}`);
+          
+          // Enregistrer les listeners permanents à chaque connexion/reconnexion
+          this.setupSocketListeners();
+          
           this.emit('connected', { id: this.socket.id });
           resolve(this.socket);
         });
@@ -66,30 +108,6 @@ class WebSocketClient {
           this.connected = false;
           console.log(`⚠️ Déconnecté du WebSocket:`, reason);
           this.emit('disconnected', { reason });
-        });
-
-        // Gérer les erreurs personnalisées
-        this.socket.on('error', (data) => {
-          console.error('❌ Erreur serveur:', data);
-          this.emit('server-error', data);
-        });
-
-        // Gérer les messages de succès
-        this.socket.on('success', (data) => {
-          console.log('✅ Succès serveur:', data);
-          this.emit('server-success', data);
-        });
-
-        // Réception des données capteurs
-        this.socket.on('sensor-data-update', (data) => {
-          console.log('📊 Données capteurs reçues:', data);
-          this.emit('sensor-data', data);
-        });
-
-        // Réception des contrôles
-        this.socket.on('controls-update', (controls) => {
-          console.log('⚙️ Contrôles mis à jour:', controls);
-          this.emit('controls', controls);
         });
 
       } catch (err) {
