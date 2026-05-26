@@ -5,7 +5,7 @@
     },
     "misting": {
         "mode": "auto",
-        "intensity": 45
+        "intensity": 50
     },
     "ventilation": {
         "mode": "auto",
@@ -13,6 +13,6 @@
     },
     "heating": {
         "mode": "auto",
-        "target": 20
+        "target": 25
     }
 }

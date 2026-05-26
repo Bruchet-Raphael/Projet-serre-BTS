@@ -143,136 +143,98 @@ async setRelay4(client) {
         };
     }
 async regulate(client, consigne) {
-    const temp = this.temperature;
-    const hum = this.humiditeMoyenne;
+    const temp   = this.temperature;
+    const hum    = this.humiditeMoyenne;
     const humair = this.humair;
 
-    const relays = await this.getRelaysState(client);
+    console.log("Régulation :", { temp, hum, humair, consigne });
 
-    console.log("Régulation :", { temp, hum, consigne });
+    // Helper pour convertir les modes
+    const normalizeMode = (mode) => {
+        if (!mode) return "auto";
+        if (mode === "active") return "on";
+        if (mode === "inactive") return "off";
+        return mode; // auto / on / off
+    };
 
-    if(consigne.relay0 == 0){
-        // ============================
-        // 💧 RÉGULATION BRUMISATION
-        // ============================
-        if (consigne.humiditeair !== null && humair !== null) {
+    // ============================
+    // 🌱 IRRIGATION (coil 101)
+    // ============================
+    const irrigationMode = normalizeMode(consigne.irrigation.mode);
+    const irrigationThreshold = consigne.irrigation.threshold;
 
-            // Humidité trop basse → activer BRUMISATION (relay1)
-            if (humair < consigne.humidite_air - 2) {
-                await client.writeSingleCoil(100, true);
-            }
-
-            // Humidité trop haute → couper brumisation
-            if (humair > consigne.humidite + 2) {
-                await client.writeSingleCoil(100, false);
-            }
-
-            // Humidité OK → OFF
-            if (humair >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
-                await client.writeSingleCoil(100, false);
-            }
+    if (irrigationMode === "auto" && hum != null) {
+        if (hum < irrigationThreshold - 2) {
+            await client.writeSingleCoil(101, true);
+        } else if (hum > irrigationThreshold + 2) {
+            await client.writeSingleCoil(101, false);
+        } else {
+            await client.writeSingleCoil(101, false);
         }
-    }
-    if(consigne.relay0 == 1){
-        await client.writeSingleCoil(100, false);
-    }
-    if(consigne.relay0 == 2){
-        await client.writeSingleCoil(100, true);
-    }
-
-    if(consigne.relay1 == 0){
-        // ============================
-        // 💧 RÉGULATION AROSAGE
-        // ============================
-        if (consigne.humidite !== null && hum !== null) {
-
-            // Humidité trop basse → activer BRUMISATION (relay1)
-            if (hum < consigne.humidite - 2) {
-                await client.writeSingleCoil(101, true);
-            }
-
-            // Humidité trop haute → couper brumisation
-            if (hum > consigne.humidite + 2) {
-                await client.writeSingleCoil(101, false);
-            }
-
-            // Humidité OK → OFF
-            if (hum >= consigne.humidite - 1 && hum <= consigne.humidite + 1) {
-                await client.writeSingleCoil(101, false);
-            }
-        }
-    }
-    if(consigne.relay1 == 1){
+    } else if (irrigationMode === "on") {
+        await client.writeSingleCoil(101, true);
+    } else if (irrigationMode === "off") {
         await client.writeSingleCoil(101, false);
     }
-    if(consigne.relay1 == 2){
-        await client.writeSingleCoil(101, true);
+
+    // ============================
+    // 💧 BRUMISATION (coil 100)
+    // ============================
+    const mistingMode = normalizeMode(consigne.misting.mode);
+    const mistingTarget = consigne.misting.intensity;
+
+    if (mistingMode === "auto" && humair != null) {
+        if (humair < mistingTarget - 2) {
+            await client.writeSingleCoil(100, true);
+        } else if (humair > mistingTarget + 2) {
+            await client.writeSingleCoil(100, false);
+        } else {
+            await client.writeSingleCoil(100, false);
+        }
+    } else if (mistingMode === "on") {
+        await client.writeSingleCoil(100, true);
+    } else if (mistingMode === "off") {
+        await client.writeSingleCoil(100, false);
     }
 
+    // ============================
+    // 🔥 CHAUFFAGE (coil 102)
+    // 🌬️ VENTILATION (coil 103)
+    // ============================
+    const heatingMode = normalizeMode(consigne.heating.mode);
+    const heatingTarget = consigne.heating.target;
 
-    
-// ----------------------------
-// RÉGULATION TEMPÉRATURE - CHAUFFAGE (relay2 -> coil 102)
-// ----------------------------
-if (consigne.relay2 == 0) {
-    // automatique : la logique est appliquée dans le bloc température ci-dessous
-    // (on n'écrit rien ici pour éviter les écritures redondantes)
-}
-if (consigne.relay2 == 1) {
-    await client.writeSingleCoil(102, false);
-}
-if (consigne.relay2 == 2) {
-    await client.writeSingleCoil(102, true);
-}
+    const ventilationMode = normalizeMode(consigne.ventilation.mode);
 
-// ----------------------------
-// RÉGULATION TEMPÉRATURE - FENÊTRE (relay3 -> coil 103)
-// ----------------------------
-if (consigne.relay3 == 0) {
-    // automatique : la logique est appliquée dans le bloc température ci-dessous
-}
-if (consigne.relay3 == 1) {
-    await client.writeSingleCoil(103, false);
-}
-if (consigne.relay3 == 2) {
-    await client.writeSingleCoil(103, true);
-}
+    // Modes forcés
+    if (heatingMode === "on") await client.writeSingleCoil(102, true);
+    if (heatingMode === "off") await client.writeSingleCoil(102, false);
 
-// ----------------------------
-// LOGIQUE DE RÉGULATION SELON LA TEMPÉRATURE
-// ----------------------------
-if (consigne.temperature !== null && temp !== null) {
+    if (ventilationMode === "on") await client.writeSingleCoil(103, true);
+    if (ventilationMode === "off") await client.writeSingleCoil(103, false);
 
-    // Trop froid → activer CHAUFFAGE (coil 102) et fermer FENÊTRE (coil 103)
-    if (temp < consigne.temperature - 0.5) {
-        if (consigne.relay2 == 0) {
-            await client.writeSingleCoil(102, true);  // Chauffage ON
+    // Logique auto température
+    if (temp != null && heatingTarget != null) {
+
+        // Trop froid
+        if (temp < heatingTarget - 0.5) {
+            if (heatingMode === "auto") await client.writeSingleCoil(102, true);
+            if (ventilationMode === "auto") await client.writeSingleCoil(103, false);
         }
-        if (consigne.relay3 == 0) {
-            await client.writeSingleCoil(103, false); // Fenêtre FERMÉE
+
+        // Trop chaud
+        else if (temp > heatingTarget + 0.5) {
+            if (heatingMode === "auto") await client.writeSingleCoil(102, false);
+            if (ventilationMode === "auto") await client.writeSingleCoil(103, true);
+        }
+
+        // Zone OK
+        else {
+            if (heatingMode === "auto") await client.writeSingleCoil(102, false);
+            if (ventilationMode === "auto") await client.writeSingleCoil(103, false);
         }
     }
 
-    // Trop chaud → couper CHAUFFAGE et ouvrir FENÊTRE
-    if (temp > consigne.temperature + 0.5) {
-        if (consigne.relay2 == 0) {
-            await client.writeSingleCoil(102, false); // Chauffage OFF
-        }
-        if (consigne.relay3 == 0) {
-            await client.writeSingleCoil(103, true);  // Fenêtre OUVERTE
-        }
-    }
-
-    // Température OK → tout OFF
-    if (temp >= consigne.temperature - 0.2 && temp <= consigne.temperature + 0.2) {
-        if (consigne.relay2 == 0) {
-            await client.writeSingleCoil(102, false); // Chauffage OFF
-        }
-        if (consigne.relay3 == 0) {
-            await client.writeSingleCoil(103, false); // Fenêtre FERMÉE
-        }
-    }
-}
     return true;
 }
 

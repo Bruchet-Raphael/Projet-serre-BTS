@@ -52,18 +52,27 @@ const JWT_SECRET = process.env.CODE;
 // ========================================
 // 📄 FICHIER DE CONFIGURATION (Régulation)
 // ========================================
-const configFile = path.join(__dirname, 'config_regulation.json');
+const configFile = path.join(__dirname, 'controles.json');
 
 // Si le fichier n'existe pas, on le crée avec des valeurs par défaut
 if (!fs.existsSync(configFile)) {
     const defaultConfig = {
-        temperature: 28.5,
-        humidite: 40.0,
-        humiditeair: 100.0,
-        relay0: null,
-        relay1: null,
-        relay2: null,
-        relay3: null
+      "irrigation": {
+        "mode": "auto",
+        "threshold": 90
+      },
+      "misting": {
+        "mode": "auto",
+        "intensity": 45
+      },
+      "ventilation": {
+        "mode": "auto",
+        "duration": null
+      },
+      "heating": {
+        "mode": "auto",
+        "target": 20
+    }
     };
     fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 4));
     console.log("📄 Fichier config_regulation.json créé avec succès !");
@@ -780,7 +789,7 @@ async function regulateLoop() {
 
     socket.connect({ host: process.env.serverIP, port: process.env.portMod });
 
-    socket.on('socket-connect', async () => {
+    socket.on('connect', async () => {   // <-- CORRECTION ICI
         try {
             const tcw = new TCW241();
             const data = await tcw.getAll(client);
@@ -803,10 +812,16 @@ async function regulateLoop() {
             });
 
         } catch (err) { 
+            console.error("Erreur regulateLoop :", err);
             socket.end();
         }
     });
+
+    socket.on('error', (err) => {
+        console.error("Erreur socket :", err);
+    });
 }
+
 
 function isAdminMiddleware(req, res, next) {
   const userId = req.user?.sub;
@@ -1098,9 +1113,9 @@ async function mailAuto() {
 
 
 
-setInterval(mailAuto,10000);
-setInterval(regulateLoop, 10000);
-setInterval(saveLoop, 10000);
+setInterval(mailAuto,30000);
+setInterval(saveLoop, 11000);
+setInterval(regulateLoop, 12000);
 
 // =======================================
 // START SERVER
