@@ -7,7 +7,7 @@ const MAPPING = {
   COMPTEUR: 100,      
   VANNE: 199,       
   POMPE: 200,
-  TEMP_POSEIDON: 6032 // Adresse 6033 avec décalage Base-0 (-1). À tester avec 6033 si erreur.
+  TEMP_POSEIDON: 6033 // Adresse 6033 avec décalage Base-0 (-1). À tester avec 6033 si erreur.
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -71,11 +71,16 @@ class IOPoseidon {
     }
 
     // 3. Lecture de la Température Locale
-    try {
+try {
       const resTemp = await this.client.readInputRegisters(MAPPING.TEMP_POSEIDON, 1);
       this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
     } catch (err) {
-      console.error(`❌ [Modbus] Erreur lecture TEMP (${MAPPING.TEMP_POSEIDON}) :`, err.message || "Rejet de la trame");
+      // Extraction du code d'exception MODBUS
+      let codeModbus = "Inconnu";
+      if (err.response && err.response.body && err.response.body.exceptionCode) {
+         codeModbus = err.response.body.exceptionCode;
+      }
+      console.error(`❌ [Modbus] Erreur lecture TEMP (${MAPPING.TEMP_POSEIDON}) - Code d'Exception Modbus : ${codeModbus}`);
     }
 
     return true;
