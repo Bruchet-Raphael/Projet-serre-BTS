@@ -50,14 +50,29 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-// --- LECTURE ISOLÉE (AVEC TEMPORISATION) ---
+// --- LECTURE ISOLÉE (MODE DIAGNOSTIC AVANCÉ) ---
   async updateAll() {
     if (!this.isConnected) return false;
     
-    // Petite fonction pour mettre le code en pause
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     
-    // 1. Lecture de la Cuve
+    // 1. LECTURE DE LA TEMPÉRATURE EN PREMIER (Test de priorité)
+    try {
+      const resTemp = await this.client.readInputRegisters(6032, 1); 
+      this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
+      console.log(`✅ [Modbus] Température lue avec succès : ${this.data.temperature}°C`);
+    } catch (err) {
+      // Extraction agressive du vrai code d'erreur Modbus selon les versions de jsmodbus
+      let code = "Inconnu";
+      if (err.response) {
+        code = err.response.exceptionCode || (err.response._body && err.response._body._exceptionCode) || err.response.body?.exceptionCode || "Trame illisible";
+      }
+      console.error(`❌ [Modbus] Erreur lecture TEMP (6032) - Code Exception : ${code}`);
+    }
+
+    await sleep(200); // ⏳ Pause augmentée à 200ms
+
+    // 2. Lecture de la Cuve
     try {
       const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
       this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
@@ -65,25 +80,14 @@ class IOPoseidon {
       console.error(`❌ [Modbus] Erreur lecture CUVE :`, err.message);
     }
 
-    await sleep(100); // ⏳ Pause de 100ms pour soulager la carte
+    await sleep(200); // ⏳ Pause augmentée à 200ms
 
-    // 2. Lecture du Compteur
+    // 3. Lecture du Compteur
     try {
       const resCompteur = await this.client.readInputRegisters(MAPPING.COMPTEUR, 1);
       this.data.impulsions = resCompteur.response.body.valuesAsArray[0];
     } catch (err) {
       console.error(`❌ [Modbus] Erreur lecture COMPTEUR :`, err.message);
-    }
-
-    await sleep(100); // ⏳ Pause de 100ms pour soulager la carte
-
-    // 3. Lecture de la Température Locale (Retour à l'adresse validée par Hercules)
-    try {
-      // Attention à bien remettre MAPPING.TEMP_POSEIDON: 6032 tout en haut du fichier
-      const resTemp = await this.client.readInputRegisters(6032, 1); 
-      this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
-    } catch (err) {
-      console.error(`❌ [Modbus] Erreur lecture TEMP (6032) :`, err.message);
     }
 
     return true;
