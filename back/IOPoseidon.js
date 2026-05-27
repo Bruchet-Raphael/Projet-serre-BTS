@@ -50,26 +50,32 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-  // --- LECTURE ISOLÉE ---
+// --- LECTURE ISOLÉE (MODE DEBUG) ---
   async updateAll() {
     if (!this.isConnected) return false;
     
+    // 1. Lecture de la Cuve
     try {
-      // 1. Lecture de la sécurité Cuve (Entrée TOR)
       const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
       this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
+    } catch (err) {
+      console.error(`❌ [Modbus] Erreur lecture CUVE (99) :`, err.message || "Rejet de la trame");
+    }
 
-      // 2. Lecture du Débitmètre (Registre d'entrée Modbus)
+    // 2. Lecture du Compteur
+    try {
       const resCompteur = await this.client.readInputRegisters(MAPPING.COMPTEUR, 1);
       this.data.impulsions = resCompteur.response.body.valuesAsArray[0];
-
-      // 3. Lecture de la Température Locale (Poseidon)
-      const resTemp = await this.client.readInputRegisters(MAPPING.TEMP_POSEIDON, 1);
-      // HW Group envoie généralement 338 pour 33.8°C. On divise donc par 10.
-      this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
-
     } catch (err) {
-      console.error(`❌ [Erreur Modbus] Lecture CUVE/COMPTEUR/TEMP refusée`);
+      console.error(`❌ [Modbus] Erreur lecture COMPTEUR (100) :`, err.message || "Rejet de la trame");
+    }
+
+    // 3. Lecture de la Température Locale
+    try {
+      const resTemp = await this.client.readInputRegisters(MAPPING.TEMP_POSEIDON, 1);
+      this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
+    } catch (err) {
+      console.error(`❌ [Modbus] Erreur lecture TEMP (${MAPPING.TEMP_POSEIDON}) :`, err.message || "Rejet de la trame");
     }
 
     return true;
