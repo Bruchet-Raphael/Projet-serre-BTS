@@ -7,7 +7,7 @@ const MAPPING = {
   COMPTEUR: 100,      
   VANNE: 199,       
   POMPE: 200,
-  TEMP_POSEIDON: 6033 // Adresse 6033 avec décalage Base-0 (-1). À tester avec 6033 si erreur.
+  TEMP_POSEIDON: 6032 // Adresse 6033 avec décalage Base-0 (-1). À tester avec 6033 si erreur.
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -50,37 +50,40 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-// --- LECTURE ISOLÉE (MODE DEBUG) ---
+// --- LECTURE ISOLÉE (AVEC TEMPORISATION) ---
   async updateAll() {
     if (!this.isConnected) return false;
+    
+    // Petite fonction pour mettre le code en pause
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     
     // 1. Lecture de la Cuve
     try {
       const resNiveau = await this.client.readDiscreteInputs(MAPPING.NIVEAU_CUVE, 1);
       this.data.cuvePleine = resNiveau.response.body.valuesAsArray[0] === 1;
     } catch (err) {
-      console.error(`❌ [Modbus] Erreur lecture CUVE (99) :`, err.message || "Rejet de la trame");
+      console.error(`❌ [Modbus] Erreur lecture CUVE :`, err.message);
     }
+
+    await sleep(100); // ⏳ Pause de 100ms pour soulager la carte
 
     // 2. Lecture du Compteur
     try {
       const resCompteur = await this.client.readInputRegisters(MAPPING.COMPTEUR, 1);
       this.data.impulsions = resCompteur.response.body.valuesAsArray[0];
     } catch (err) {
-      console.error(`❌ [Modbus] Erreur lecture COMPTEUR (100) :`, err.message || "Rejet de la trame");
+      console.error(`❌ [Modbus] Erreur lecture COMPTEUR :`, err.message);
     }
 
-    // 3. Lecture de la Température Locale
-try {
-      const resTemp = await this.client.readInputRegisters(MAPPING.TEMP_POSEIDON, 1);
+    await sleep(100); // ⏳ Pause de 100ms pour soulager la carte
+
+    // 3. Lecture de la Température Locale (Retour à l'adresse validée par Hercules)
+    try {
+      // Attention à bien remettre MAPPING.TEMP_POSEIDON: 6032 tout en haut du fichier
+      const resTemp = await this.client.readInputRegisters(6032, 1); 
       this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
     } catch (err) {
-      // Extraction du code d'exception MODBUS
-      let codeModbus = "Inconnu";
-      if (err.response && err.response.body && err.response.body.exceptionCode) {
-         codeModbus = err.response.body.exceptionCode;
-      }
-      console.error(`❌ [Modbus] Erreur lecture TEMP (${MAPPING.TEMP_POSEIDON}) - Code d'Exception Modbus : ${codeModbus}`);
+      console.error(`❌ [Modbus] Erreur lecture TEMP (6032) :`, err.message);
     }
 
     return true;
