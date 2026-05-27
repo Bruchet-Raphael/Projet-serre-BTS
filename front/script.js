@@ -86,20 +86,25 @@ async function initializeWebSocket() {
             resolve();
         });
 
-        wsClient.on('sensor-data', (data) => {
-            console.log('📊 Mise à jour capteurs WebSocket:', data);
-            // Convertir les données du serveur au format attendu par updateSensorData
-            const formattedData = {
-                temperature: data.temperature,
-                humidity: data.humidite,
-                humAir: data.humiditeair,
-                consoEau: 0,  // À initialiser selon vos données
-                cuvePleine: false,
-                reseauPluie: false,
-                timestamp: data.timestamp
-            };
-            updateSensorData(formattedData);
-        });
+            wsClient.on('sensor-data', (data) => {
+        console.log('📊 Mise à jour capteurs WebSocket:', data);
+
+        // Conversion correcte des données envoyées par le backend
+        const formattedData = {
+            temperature: data.temperature,
+            humidity: data.humiditeSol,  // humidité moyenne
+            humAir: data.humair,                          // humidité de l'air
+            humiditeSol: data.humiditeSol,                // humidité du sol
+            r1: data.r1,
+            r2: data.r2,
+            r3: data.r3,
+            r4: data.r4,
+            timestamp: data.timestamp
+        };
+
+    updateSensorData(formattedData);
+});
+
 
         wsClient.on('controls', (controls) => {
             console.log('⚙️ Contrôles mis à jour WebSocket:', controls);
