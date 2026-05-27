@@ -380,7 +380,7 @@ app.post('/api/refresh-token', (req, res) => {
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
-const poseidon = new IOPoseidon('172.29.254.100'); // IP Simulateur
+const poseidon = new IOPoseidon('172.29.254.100'); // IP de la carte Poseidon
 
 async function startWaterSupervision() {
   try {
@@ -388,10 +388,13 @@ async function startWaterSupervision() {
     
     setInterval(async () => {
       try {
+          // 1. Mise à jour de tous les capteurs (Cuve, Compteur ET la nouvelle Température locale)
           await poseidon.updateAll();
           
-          await poseidon.gererChoixReseau(temperatureGlobale); 
+          // 2. Gestion de la vanne (Totalement autonome sur l'anti-gel)
+          await poseidon.gererChoixReseau(); 
           
+          // 3. Logique de demande d'arrosage (Conserve la fusion de données avec l'IHM)
           let besoinEau = false; 
 
           if (modeArrosageGlobal === 'active') {
@@ -403,18 +406,20 @@ async function startWaterSupervision() {
               }
           }
           
-          await poseidon.gererPompe(besoinEau, temperatureGlobale);
+          // 4. Gestion de la pompe (Gère l'arrosage tout en vérifiant sa propre température)
+          await poseidon.gererPompe(besoinEau);
           
       } catch (errLoop) {
-          console.error("Erreur Poseidon :", errLoop.message);
+          console.error("❌ Erreur dans la boucle Poseidon :", errLoop.message);
       }
-    }, 2000);
+    }, 2000); // Temps de cycle de 2 secondes
     
-    console.log("💧 Supervision Poseidon démarrée");
+    console.log("💧 Supervision Poseidon démarrée en mode 100% autonome");
   } catch (err) {
-    console.error("Erreur Supervision Poseidon:", err.message);
+    console.error("❌ Erreur démarrage Supervision Poseidon:", err.message);
   }
 }
+
 startWaterSupervision();
 
 // ========================================

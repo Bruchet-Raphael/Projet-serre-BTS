@@ -6,7 +6,8 @@ const MAPPING = {
   NIVEAU_CUVE: 99,   
   COMPTEUR: 100,      
   VANNE: 199,       
-  POMPE: 200       
+  POMPE: 200,
+  TEMP_POSEIDON: 6032 // Adresse 6033 avec décalage Base-0 (-1). À tester avec 6033 si erreur.
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -20,7 +21,8 @@ class IOPoseidon {
 
     this.data = {
       cuvePleine: false,
-      impulsions: 505, 
+      impulsions: 505,
+      temperature: 0 // Nouvelle variable interne
     };
     this.isConnected = false;
   }
@@ -48,7 +50,7 @@ class IOPoseidon {
     this.isConnected = false;
   }
 
-// --- LECTURE ISOLÉE ---
+  // --- LECTURE ISOLÉE ---
   async updateAll() {
     if (!this.isConnected) return false;
     
@@ -61,8 +63,13 @@ class IOPoseidon {
       const resCompteur = await this.client.readInputRegisters(MAPPING.COMPTEUR, 1);
       this.data.impulsions = resCompteur.response.body.valuesAsArray[0];
 
+      // 3. Lecture de la Température Locale (Poseidon)
+      const resTemp = await this.client.readInputRegisters(MAPPING.TEMP_POSEIDON, 1);
+      // HW Group envoie généralement 338 pour 33.8°C. On divise donc par 10.
+      this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
+
     } catch (err) {
-      console.error(`❌ [Erreur Modbus] Lecture CUVE/COMPTEUR refusée`);
+      console.error(`❌ [Erreur Modbus] Lecture CUVE/COMPTEUR/TEMP refusée`);
     }
 
     return true;
@@ -95,18 +102,18 @@ class IOPoseidon {
     }
   }
 
-  // --- INTELLIGENCE MATÉRIELLE ---
-async gererChoixReseau(temperatureTCW) {
-    const pasDeGel = temperatureTCW >= 1;
+  // --- INTELLIGENCE MATÉRIELLE 100% AUTONOME ---
+  // On n'a plus besoin de recevoir la température en paramètre !
+  async gererChoixReseau() {
+    const pasDeGel = this.data.temperature >= 1;
     await this.setReseauEau(this.data.cuvePleine && pasDeGel);
   }
 
-  // On ajoute le paramètre "temperatureTCW"
-  async gererPompe(besoinEau, temperatureTCW) {
-    const pasDeGel = temperatureTCW >= 1;
+  async gererPompe(besoinEau) {
+    const pasDeGel = this.data.temperature >= 1;
     
     if (!this.data.cuvePleine || !pasDeGel) {
-      if (besoinEau) console.log(`⚠️ [SÉCURITÉ] Pompe bloquée ! (Cuve Pleine: ${this.data.cuvePleine} | Temp TCW: ${temperatureTCW}°C)`);
+      if (besoinEau) console.log(`⚠️ [SÉCURITÉ] Pompe bloquée ! (Cuve Pleine: ${this.data.cuvePleine} | Temp Locale: ${this.data.temperature}°C)`);
       await this.setPompe(false);
       return;
     }
