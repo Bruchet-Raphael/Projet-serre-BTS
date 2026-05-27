@@ -102,6 +102,7 @@ async setRelay4(client) {
 
     this.setTemperature(temperature);
     this.setHumidites(h1, h2, h3);
+    this.setHumAir(humair);
 
     return {
         temperature: this.temperature,

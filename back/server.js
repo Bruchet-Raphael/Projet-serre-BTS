@@ -1110,12 +1110,175 @@ async function mailAuto() {
   }
 }
 
+async function tcw241Auto() {
+
+    const socket = new net.Socket();
+    const client = new Modbus.client.TCP(socket);
+    const tcw = new TCW241();
+
+    const alertFile = path.join(__dirname, "alert.json");
+    const wait = (ms) => new Promise(res => setTimeout(res, ms));
+
+    // Charger alert.json
+    let alertData = { lastTempAlert: null };
+    if (fs.existsSync(alertFile)) {
+        try {
+            alertData = JSON.parse(fs.readFileSync(alertFile, "utf8"));
+        } catch (e) {
+            console.log("Erreur lecture JSON :", e);
+        }
+    }
+
+    try {
+        // Connexion Modbus
+        await new Promise((resolve, reject) => {
+            socket.connect(
+                { host: process.env.serverIP, port: process.env.portMod },
+                resolve
+            );
+            socket.on("error", reject);
+        });
+
+        // ============================
+        // 1) LECTURE COMPLÈTE TCW241
+        // ============================
+        let tcwData = {};
+        try {
+            tcwData = await tcw.getAll(client);
+        } catch (err) {
+            console.error("⚠ Impossible de lire TCW241 :", err);
+            tcwData = { h1: null, h2: null, h3: null, humair: null, humiditeMoyenne: null, temperature: null };
+        }
+        console.log(tcwData);
+        // ============================
+        // 2) RÉGULATION
+        // ============================
+        try {
+            const configFile = path.join(__dirname, "controles.json");
+            const fileData = fs.readFileSync(configFile, "utf8");
+            const consigne = JSON.parse(fileData);
+
+            await tcw.regulate(client, consigne);
+
+        } catch (err) {
+            console.error("Erreur régulation :", err);
+        }
+
+        // ============================
+        // 3) SAUVEGARDE EN BDD
+        // ============================
+        try {
+            const consoTotal = poseidon.getConsommationLitres();
+            const consoPluie = 0;
+
+            const sql = `
+                INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            `;
+
+            db.query(sql, [
+                consoPluie,
+                tcwData.h1,
+                tcwData.h2,
+                tcwData.h3,
+                tcwData.humair,
+                tcwData.humiditeMoyenne,
+                tcwData.temperature,
+                consoTotal
+            ], (err) => {
+                if (err) {
+                    console.error("❌ Erreur SQL :", err.message);
+                } else {
+                    console.log(`💾 Données enregistrées : Temp=${tcwData.temperature || 'N/A'}°C | Conso=${consoTotal}L`);
+                }
+            });
+
+        } catch (err) {
+            console.error("Erreur sauvegarde BDD :", err);
+        }
+
+        // ============================
+        // 4) ALERTES MAIL TEMPÉRATURE
+        // ============================
+        try {
+            const temp = tcwData.temperature ?? await tcw.getTemp(client);
+            console.log("Température lue :", temp);
+
+            if (temp <= 3) {
+
+                // Vérifier si une alerte a été envoyée dans l'heure
+                if (alertData.lastTempAlert) {
+                    const last = new Date(alertData.lastTempAlert);
+                    const now = new Date();
+                    const diffHours = (now - last) / (1000 * 60 * 60);
+
+                    if (diffHours < 1) {
+                        console.log("⛔ Alerte déjà envoyée il y a moins d'une heure.");
+                        return;
+                    }
+                }
+
+                console.log("⚠ Alerte autorisée, envoi des mails…");
+
+                const query = "SELECT mail FROM User WHERE role = 1 OR admin = 1;";
+
+                db.query(query, async (err, results) => {
+                    if (err) {
+                        console.log("Erreur SQL :", err);
+                        return;
+                    }
+
+                    for (const user of results) {
+                        const email = user.mail;
+
+                        if (!email || !email.includes("@")) {
+                            console.log("Adresse email invalide :", email);
+                            continue;
+                        }
+
+                        try {
+                            await transporter.sendMail({
+                                from: process.env.SMTP_USER,
+                                to: email,
+                                subject: "Alerte température",
+                                text: `Attention : la température est descendue à ${temp}°C`
+                            });
+
+                            console.log("Mail envoyé à :", email);
+
+                        } catch (sendErr) {
+                            console.log("Erreur envoi mail à", email, ":", sendErr);
+                        }
+
+                        await wait(500);
+                    }
+
+                    // Mise à jour du fichier JSON
+                    alertData.lastTempAlert = new Date().toISOString();
+                    fs.writeFileSync(alertFile, JSON.stringify(alertData, null, 2));
+
+                    console.log("📝 Alerte enregistrée dans alert.json");
+                });
+            }
+
+        } catch (err) {
+            console.error("Erreur alerte mail :", err);
+        }
+
+    } catch (err) {
+        console.error("Erreur tcw241Auto :", err);
+    } finally {
+        socket.end();
+        console.log("=== FIN tcw241Auto ===");
+    }
+}
 
 
 
-setInterval(mailAuto,30000);
-setInterval(saveLoop, 11000);
-setInterval(regulateLoop, 12000);
+//setInterval(mailAuto,30000);
+//setInterval(saveLoop, 11000);
+//setInterval(regulateLoop, 12000);
+setInterval(tcw241Auto,10000);
 
 // =======================================
 // START SERVER
