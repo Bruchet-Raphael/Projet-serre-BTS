@@ -1175,7 +1175,7 @@ async function tcw241Auto() {
         try {
             const consoTotal = poseidon.getConsommationLitres();
             const consoPluie = 0;
-
+            console.log(tcwData);
             const sql = `
                 INSERT INTO Capteur (conso_pluie, h1, h2, h3, humidite_air, humidite_sol, temperature, conso_total, date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
@@ -1187,7 +1187,7 @@ async function tcw241Auto() {
                 tcwData.h2,
                 tcwData.h3,
                 tcwData.humair,
-                tcwData.humiditeMoyenne,
+                tcwData.humiditeSol,
                 tcwData.temperature,
                 consoTotal
             ], (err) => {

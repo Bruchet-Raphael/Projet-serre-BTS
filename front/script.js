@@ -99,6 +99,9 @@ async function initializeWebSocket() {
             r2: data.r2,
             r3: data.r3,
             r4: data.r4,
+            consoEau: 0,  // À initialiser selon vos données
+            cuvePleine: false,
+            reseauPluie: false,
             timestamp: data.timestamp
         };
 
