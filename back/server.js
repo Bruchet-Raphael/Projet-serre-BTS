@@ -380,6 +380,7 @@ app.post('/api/refresh-token', (req, res) => {
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
+const IOPoseidon = require('./IOPoseidon'); // Vérifie le chemin si besoin
 const poseidon = new IOPoseidon('172.29.254.100'); // IP de la carte Poseidon
 
 async function startWaterSupervision() {
@@ -401,6 +402,7 @@ async function startWaterSupervision() {
               besoinEau = true; 
           } 
           else if (modeArrosageGlobal === 'auto') {
+              // Vérifier que ces variables globales sont bien définies dans ton fichier principal
               if (humiditeSolGlobale < seuilArrosageGlobal) {
                   besoinEau = true; 
               }
@@ -408,6 +410,9 @@ async function startWaterSupervision() {
           
           // 4. Gestion de la pompe (Gère l'arrosage tout en vérifiant sa propre température)
           await poseidon.gererPompe(besoinEau);
+          
+          // 5. AFFICHAGE DE CONTRÔLE DANS LES LOGS (Ajouté ici)
+          console.log(`🌊 [Poseidon] État -> Cuve: ${poseidon.isCuvePleine() ? 'Pleine' : 'Vide'} | Temp Locale: ${poseidon.getTemperature()}°C | Conso: ${poseidon.getConsommationLitres()}L`);
           
       } catch (errLoop) {
           console.error("❌ Erreur dans la boucle Poseidon :", errLoop.message);

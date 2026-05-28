@@ -7,7 +7,7 @@ const MAPPING = {
   COMPTEUR: 100,      
   VANNE: 199,       
   POMPE: 200,
-  TEMP_POSEIDON: 100 // Adresse 100, mais qui sera lue sur le SLAVE 2
+  TEMP_POSEIDON: 100 // Adresse 100, lue sur le SLAVE 2
 };
 
 const LITRES_PAR_IMPULSION = 1.0;
@@ -18,7 +18,7 @@ class IOPoseidon {
     this.port = port;
     this.socket = new net.Socket();
     
-    // L'astuce industrielle : Deux clients logiques sur un seul câble physique
+    // Deux clients logiques sur un seul câble physique
     this.clientSlave1 = new Modbus.client.TCP(this.socket, 1); // Cœur de l'automate (Eau, Relais)
     this.clientSlave2 = new Modbus.client.TCP(this.socket, 2); // Bus externe (Capteur Température)
 
@@ -79,7 +79,7 @@ class IOPoseidon {
 
     await sleep(50);
 
-    // 3. Lecture de la Température (Sur le Slave 2 !)
+    // 3. Lecture de la Température (Sur le Slave 2)
     try {
       const resTemp = await this.clientSlave2.readInputRegisters(MAPPING.TEMP_POSEIDON, 1); 
       this.data.temperature = resTemp.response.body.valuesAsArray[0] / 10;
