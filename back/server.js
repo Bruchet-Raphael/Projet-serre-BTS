@@ -380,9 +380,6 @@ app.post('/api/refresh-token', (req, res) => {
 // 🌊 GESTION POSEIDON (ETUDIANT 2)
 // ========================================
 
-const IOPoseidon = require('./IOPoseidon'); // Vérifie le chemin si besoin
-const poseidon = new IOPoseidon('172.29.254.100'); // IP de la carte Poseidon
-
 async function startWaterSupervision() {
   try {
     await poseidon.connect();
