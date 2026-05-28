@@ -150,12 +150,11 @@ async regulate(client, consigne) {
 
     console.log("Régulation :", { temp, hum, humair, consigne });
 
-    // Helper pour convertir les modes
     const normalizeMode = (mode) => {
         if (!mode) return "auto";
         if (mode === "active") return "on";
         if (mode === "inactive") return "off";
-        return mode; // auto / on / off
+        return mode;
     };
 
     // ============================
@@ -167,15 +166,11 @@ async regulate(client, consigne) {
     if (irrigationMode === "auto" && hum != null) {
         if (hum < irrigationThreshold - 2) {
             await client.writeSingleCoil(101, true);
-        } else if (hum > irrigationThreshold + 2) {
-            await client.writeSingleCoil(101, false);
         } else {
             await client.writeSingleCoil(101, false);
         }
-    } else if (irrigationMode === "on") {
-        await client.writeSingleCoil(101, true);
-    } else if (irrigationMode === "off") {
-        await client.writeSingleCoil(101, false);
+    } else {
+        await client.writeSingleCoil(101, irrigationMode === "on");
     }
 
     // ============================
@@ -187,15 +182,11 @@ async regulate(client, consigne) {
     if (mistingMode === "auto" && humair != null) {
         if (humair < mistingTarget - 2) {
             await client.writeSingleCoil(100, true);
-        } else if (humair > mistingTarget + 2) {
-            await client.writeSingleCoil(100, false);
         } else {
             await client.writeSingleCoil(100, false);
         }
-    } else if (mistingMode === "on") {
-        await client.writeSingleCoil(100, true);
-    } else if (mistingMode === "off") {
-        await client.writeSingleCoil(100, false);
+    } else {
+        await client.writeSingleCoil(100, mistingMode === "on");
     }
 
     // ============================
@@ -208,28 +199,31 @@ async regulate(client, consigne) {
     const ventilationMode = normalizeMode(consigne.ventilation.mode);
 
     // Modes forcés
-    if (heatingMode === "on") await client.writeSingleCoil(102, true);
-    if (heatingMode === "off") await client.writeSingleCoil(102, false);
+    if (heatingMode !== "auto") {
+        await client.writeSingleCoil(102, heatingMode === "on");
+    }
+    if (ventilationMode !== "auto") {
+        await client.writeSingleCoil(103, ventilationMode === "on");
+    }
 
-    if (ventilationMode === "on") await client.writeSingleCoil(103, true);
-    if (ventilationMode === "off") await client.writeSingleCoil(103, false);
-
-    // Logique auto température
+    // ============================
+    // 🔥🌬️ LOGIQUE AUTO DEMANDÉE
+    // ============================
     if (temp != null && heatingTarget != null) {
 
-        // Trop froid
-        if (temp < heatingTarget - 0.5) {
+        // Trop froid → Chauffage ON
+        if (temp < heatingTarget - 2) {
             if (heatingMode === "auto") await client.writeSingleCoil(102, true);
             if (ventilationMode === "auto") await client.writeSingleCoil(103, false);
         }
 
-        // Trop chaud
-        else if (temp > heatingTarget + 0.5) {
+        // Trop chaud → Ventilation ON
+        else if (temp > heatingTarget + 2) {
             if (heatingMode === "auto") await client.writeSingleCoil(102, false);
             if (ventilationMode === "auto") await client.writeSingleCoil(103, true);
         }
 
-        // Zone OK
+        // Zone neutre → tout OFF
         else {
             if (heatingMode === "auto") await client.writeSingleCoil(102, false);
             if (ventilationMode === "auto") await client.writeSingleCoil(103, false);
@@ -238,6 +232,7 @@ async regulate(client, consigne) {
 
     return true;
 }
+
 
  static parseNumber(v) {
     if (v === null || v === undefined) return null;

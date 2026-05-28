@@ -1,2 +1,5 @@
 /back/node_modules/
 .env
+.gitignore
+controles.json
+alert.json
