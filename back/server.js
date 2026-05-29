@@ -865,6 +865,18 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
   });
 });
 
+// route pour le rfid
+app.get("/api/rfid", (req, res) => {
+  const uid = req.query.uid;
+  console.log("Badge reçu :", uid);
+
+  // Vérification dans MySQL
+  // SELECT * FROM User WHERE uid = ?
+
+  res.json({ status: "ok", uid });
+});
+
+
 app.get('/status', authMiddleware,async (req, res) => {
   try {
     const response = await axios.get(process.env.TARGET_URL, {
