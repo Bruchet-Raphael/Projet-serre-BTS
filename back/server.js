@@ -829,6 +829,21 @@ app.get('/api/admin/users', authMiddleware, (req, res) => {
   });
 });
 
+app.delete('/api/admin/users/:userId', authMiddleware, (req, res) => {
+  const { userId } = req.params;
+  const query = 'DELETE FROM User WHERE id = ?';
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Erreur suppression User:', err);
+      return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User non trouvé' });
+    }
+    res.json({ success: true, message: 'User supprimé avec succès' });
+  });
+});
+
 app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
   const { userId } = req.params;
   const { newRole } = req.body;
