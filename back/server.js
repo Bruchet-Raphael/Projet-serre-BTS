@@ -867,14 +867,18 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
 
 // route pour le rfid
 app.get("/api/rfid", (req, res) => {
-  const uid = req.query.uid;
-  console.log("Badge reçu :", uid);
+    const uid = req.query.uid;
 
-  // Vérification dans MySQL
-  // SELECT * FROM User WHERE uid = ?
+    console.log("Badge reçu :", uid);
 
-  res.json({ status: "ok", uid });
+    if (!uid) {
+        return res.status(400).json({ error: "UID manquant" });
+    }
+
+    // Simulation de réponse simple
+    res.json({ message: "UID reçu", uid: uid });
 });
+
 
 
 app.get('/status', authMiddleware,async (req, res) => {
