@@ -1,32 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Test RFID</title>
+    <meta charset="UTF-8">
+    <title>Lecteur RFID – Historique</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #result {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            white-space: pre-wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        input {
+            padding: 10px;
+            width: 250px;
+        }
+    </style>
 </head>
 <body>
 
-  <h2>Test API RFID</h2>
+    <h1>Interface RFID – Lecture JSON</h1>
 
-  <input id="uid" type="text" placeholder="Entrez un UID (ex: B2:51:DF:EF)">
-  <button onclick="sendUID()">Envoyer</button>
+    <label>UID à tester :</label>
+    <input type="text" id="uid" placeholder="Ex: 4A FF 23 9B">
+    <button onclick="sendRequest()">Envoyer</button>
 
-  <p id="result"></p>
+    <div id="result">En attente de données…</div>
 
-  <script>
-    function sendUID() {
-      const uid = document.getElementById("uid").value;
+    <script>
+        function sendRequest() {
+            const uid = document.getElementById("uid").value;
 
-      fetch(`http://172.29.160.160:8867/api/rfid?uid=${uid}`)
-        .then(res => res.text())
-        .then(data => {
-          document.getElementById("result").innerText = "Réponse serveur : " + data;
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "Erreur : " + err;
-        });
-    }
-  </script>
+            fetch(`http://172.29.160.160:8867/api/rfid?uid=${uid}`)
+                .then(res => res.text())
+                .then(data => {
+                    document.getElementById("result").textContent =
+                        "Réponse du serveur :\n\n" + data;
+                })
+                .catch(err => {
+                    document.getElementById("result").textContent =
+                        "Erreur : " + err;
+                });
+        }
+    </script>
 
 </body>
 </html>

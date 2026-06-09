@@ -869,27 +869,49 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
 // CONFIGURATION IP ARDUINO
 // -------------------------------
 const ARDUINO_IP = "172.29.45.12";   // <--- IP Arduino (modifiable)
-
-// Route API appelée par l’Arduino
+// -------------------------------
+// ROUTE RFID POUR L’ARDUINO
+// -------------------------------
 app.get("/api/rfid", (req, res) => {
-  const uid = req.query.uid;   // <-- c’est déjà utilisable tel quel
-  console.log("UID reçu :", uid);
+  const uid = req.query.uid;
+  const ip = req.ip.replace("::ffff:", ""); // IP réelle du client
 
-  if (!uid) return res.send("PAS_UID");
+  console.log("UID reçu :", uid, "| IP :", ip);
 
-  // Vérifier dans la base
-  const sql = "SELECT * FROM User WHERE bagde = ?";
-  db.query(sql, [uid], (err, results) => {
-    if (err) return res.send("ERREUR_SQL");
+  // Vérification IP Arduino
+  if (ip !== ARDUINO_IP) {
+    console.log("Requête refusée : IP non autorisée");
+    return res.send("UNAUTHORIZED_IP");
+  }
+
+  if (!uid) return res.send("NO_UID");
+
+  // Vérifie si le badge existe
+  const sqlUser = "SELECT * FROM user WHERE bagde = ?";
+  db.query(sqlUser, [uid], (err, results) => {
+    if (err) return res.send("SQL_ERROR");
+
+    let status = "REFUSE";
+    let role = "NONE";
 
     if (results.length > 0) {
-      res.send("OK");
-    } else {
-      res.send("REFUSE");
+      const user = results[0];
+      role = user.admin === 1 ? "ADMIN" : "USER";
+      status = "OK_" + role;
     }
+
+    // -------------------------------
+    // HISTORISATION DANS LA TABLE
+    // -------------------------------
+    const sqlLog = "INSERT INTO historique (uid, role, statut, date_scan) VALUES (?, ?, ?, NOW())";
+    db.query(sqlLog, [uid, role, status], (err) => {
+      if (err) console.log("Erreur insertion historique :", err);
+    });
+
+    // Réponse envoyée à l’Arduino
+    res.send(status);
   });
 });
-
 
 app.get('/status', authMiddleware,async (req, res) => {
   try {
