@@ -865,35 +865,30 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
   });
 });
 
-// Route pour le lecteur RFID
+// -------------------------------
+// CONFIGURATION IP ARDUINO
+// -------------------------------
+const ARDUINO_IP = "172.29.45.12";   // <--- IP Arduino (modifiable)
+
+// Route API appelée par l’Arduino
 app.get("/api/rfid", (req, res) => {
-  const uid = req.query.uid;
+  const uid = req.query.uid;   // <-- c’est déjà utilisable tel quel
+  console.log("UID reçu :", uid);
 
-  if (!uid) {
-    return res.status(400).json({ status: "ERROR", message: "UID manquant" });
-  }
+  if (!uid) return res.send("PAS_UID");
 
-  console.log("Badge reçu :", uid);
+  // Vérifier dans la base
+  const sql = "SELECT * FROM User WHERE bagde = ?";
+  db.query(sql, [uid], (err, results) => {
+    if (err) return res.send("ERREUR_SQL");
 
-  // Vérifie si le badge existe
-  const sql = "SELECT * FROM user WHERE bagde = ?";
-  db.query(sql, [uid], (err, result) => {
-    if (err) throw err;
-
-    let status = "REFUSE";
-    if (result.length > 0 && result[0].admin == 1) {
-      status = "OK";
+    if (results.length > 0) {
+      res.send("OK");
+    } else {
+      res.send("REFUSE");
     }
-
-    // Met à jour le champ role pour garder une trace
-    const updateSql = "UPDATE user SET role = ? WHERE bagde = ?";
-    db.query(updateSql, [status === "OK" ? 1 : 0, uid], () => {});
-
-    // Réponse envoyée à l’Arduino
-    res.json({ status: status });
   });
 });
-
 
 
 app.get('/status', authMiddleware,async (req, res) => {

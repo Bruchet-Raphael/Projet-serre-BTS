@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test RFID</title>
+</head>
+<body>
+
+  <h2>Test API RFID</h2>
+
+  <input id="uid" type="text" placeholder="Entrez un UID (ex: B2:51:DF:EF)">
+  <button onclick="sendUID()">Envoyer</button>
+
+  <p id="result"></p>
+
+  <script>
+    function sendUID() {
+      const uid = document.getElementById("uid").value;
+
+      fetch(`http://172.29.160.160:8867/api/rfid?uid=${uid}`)
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById("result").innerText = "Réponse serveur : " + data;
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "Erreur : " + err;
+        });
+    }
+  </script>
+
+</body>
+</html>
