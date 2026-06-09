@@ -868,37 +868,88 @@ app.put('/api/admin/users/:userId/role', authMiddleware, (req, res) => {
 // -------------------------------
 // CONFIGURATION IP ARDUINO
 // -------------------------------
-const ARDUINO_IP = "172.29.45.12";   // <--- IP Arduino (modifiable)
-// -------------------------------
-// ROUTE RFID POUR L’ARDUINO
-// -------------------------------
+const ARDUINO_IP = "172.29.160.50";
+// --------------------------------------------------
+// ROUTE RFID
+// --------------------------------------------------
 app.get("/api/rfid", (req, res) => {
   const uid = req.query.uid;
-  const ip = req.ip.replace("::ffff:", ""); // IP réelle du client
+  const ip = req.ip.replace("::ffff:", "");
 
-  console.log("UID reçu :", uid, "| IP :", ip);
+  console.log("Requête reçue | UID :", uid, "| IP :", ip);
 
-  // Vérification IP Arduino
-  if (ip !== ARDUINO_IP) {
-    console.log("Requête refusée : IP non autorisée");
-    return res.send("UNAUTHORIZED_IP");
+  if (!uid) {
+    return res.json({ status: "NO_UID" });
   }
 
-  if (!uid) return res.send("NO_UID");
+  // --------------------------------------------------
+  // CAS 1 : Requête venant de l’Arduino
+  // --------------------------------------------------
+  if (ip === ARDUINO_IP) {
+    console.log("Requête Arduino détectée");
 
-  // Vérifie si le badge existe
-  const sqlUser = "SELECT * FROM user WHERE bagde = ?";
-  db.query(sqlUser, [uid], (err, results) => {
-    if (err) return res.send("SQL_ERROR");
+    const sql = "SELECT * FROM user WHERE bagde = ?";
+    db.query(sql, [uid], (err, result) => {
+      if (err) return res.json({ status: "SQL_ERROR" });
+
+      let status = "REFUSE";
+      let role = "NONE";
+
+      if (result.length > 0) {
+        const user = result[0];
+        role = user.admin === 1 ? "ADMIN" : "USER";
+        status = "OK_" + role;
+      }
+
+      // Historisation
+      const sqlLog = `
+        INSERT INTO historique (uid, role, statut, date_scan)
+        VALUES (?, ?, ?, NOW())
+      `;
+      db.query(sqlLog, [uid, role, status]);
+
+      // Réponse simple pour l’Arduino
+      return res.send(status);
+    });
+
+    return;
+  }
+
+  // --------------------------------------------------
+  // CAS 2 : Requête venant du FRONT HTML
+  // --------------------------------------------------
+  console.log("Requête Front détectée");
+
+  const sql = "SELECT * FROM user WHERE bagde = ?";
+  db.query(sql, [uid], (err, result) => {
+    if (err) return res.json({ status: "SQL_ERROR" });
 
     let status = "REFUSE";
     let role = "NONE";
 
-    if (results.length > 0) {
-      const user = results[0];
+    if (result.length > 0) {
+      const user = result[0];
       role = user.admin === 1 ? "ADMIN" : "USER";
       status = "OK_" + role;
     }
+
+    // Historisation
+    const sqlLog = `
+      INSERT INTO historique (uid, role, statut, date_scan)
+      VALUES (?, ?, ?, NOW())
+    `;
+    db.query(sqlLog, [uid, role, status]);
+
+    // Réponse JSON pour le front
+    return res.json({
+      uid: uid,
+      role: role,
+      status: status,
+      source: "FRONT",
+      message: "Lecture RFID traitée avec succès"
+    });
+  });
+});
 
     // -------------------------------
     // HISTORISATION DANS LA TABLE
